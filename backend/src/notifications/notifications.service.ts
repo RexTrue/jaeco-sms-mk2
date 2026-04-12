@@ -1,12 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { Notification, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PushService } from './push.service';
-import { RealtimeService } from '../events/realtime.service';
+import { RealtimeStreamService } from './realtime-stream.service';
 
-export type NotificationCategory = 'system' | 'broadcast';
+type NotificationKind = 'system' | 'broadcast';
 
-export type CreateNotificationInput = {
+type CreateNotificationInput = {
   type: string;
   title: string;
   message: string;
@@ -25,68 +24,49 @@ type BroadcastInput = {
   targetRoles: Role[];
 };
 
-const defaultRoles: Role[] = ['ADMIN', 'MANAGER', 'FRONTLINE', 'MEKANIK'];
+type ListOptions = {
+  search?: string;
+  unreadOnly?: boolean;
+  sort?: 'newest' | 'oldest';
+};
+
+const allRoles: Role[] = ['ADMIN', 'MANAGER', 'FRONTLINE', 'MEKANIK'];
 
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly realtimeService: RealtimeService,
-    private readonly pushService: PushService,
+    private readonly realtimeStreamService: RealtimeStreamService,
   ) {}
 
+  private buildTypeFilter(kind: NotificationKind) {
+    return kind === 'broadcast'
+      ? { startsWith: 'BROADCAST_' }
+      : { not: { startsWith: 'BROADCAST_' } };
+  }
+
   private async resolveRecipients(targetRoles: Role[], actorUserId?: number | null) {
-    return this.prisma.user.findMany({
+    const uniqueRoles = Array.from(new Set(targetRoles));
+    const users = await this.prisma.user.findMany({
       where: {
+        role: { in: uniqueRoles },
         isActive: true,
-        role: { in: targetRoles },
         ...(actorUserId ? { id_user: { not: actorUserId } } : {}),
       },
       select: { id_user: true, role: true },
     });
+
+    return users.map((user) => ({
+      userId: user.id_user,
+      roleSnapshot: user.role,
+    }));
   }
 
-  private getTypeFilter(category: NotificationCategory) {
-    return category === 'broadcast' ? { type: 'BROADCAST' } : { type: { not: 'BROADCAST' } };
-  }
+  async create(input: CreateNotificationInput): Promise<Notification | null> {
+    const targetRoles = input.roles?.length ? Array.from(new Set(input.roles)) : allRoles;
+    const recipients = await this.resolveRecipients(targetRoles, input.actorUserId);
 
-  private async emitDelivery(
-    userIds: number[],
-    category: NotificationCategory,
-    notification: {
-      id: number;
-      type: string;
-      title: string;
-      message: string;
-      entityType: string | null;
-      entityId: string | null;
-      targetPath: string | null;
-      createdAt: Date;
-    },
-  ) {
-    const normalized = {
-      ...notification,
-      createdAt: notification.createdAt.toISOString(),
-      category,
-    };
-
-    this.realtimeService.broadcast(userIds, {
-      type: category === 'broadcast' ? 'broadcast.created' : 'notification.created',
-      data: { notification: normalized },
-    });
-
-    await this.pushService.sendToUsers(userIds, {
-      title: notification.title,
-      body: notification.message,
-      tag: `jaecoo-${category}-${notification.id}`,
-      url: notification.targetPath,
-    });
-  }
-
-  async create(input: CreateNotificationInput) {
-    const roles = input.roles?.length ? Array.from(new Set(input.roles)) : defaultRoles;
-    const recipients = await this.resolveRecipients(roles, input.actorUserId ?? null);
-    if (recipients.length === 0) {
+    if (!recipients.length) {
       return null;
     }
 
@@ -100,69 +80,83 @@ export class NotificationsService {
         targetPath: input.targetPath ?? null,
         createdByUserId: input.actorUserId ?? null,
         recipients: {
-          create: recipients.map((user) => ({
-            userId: user.id_user,
-            roleSnapshot: user.role,
-          })),
+          create: recipients,
         },
       },
     });
 
-    await this.emitDelivery(
-      recipients.map((user) => user.id_user),
-      'system',
-      created,
+    this.realtimeStreamService.publishToUsers(
+      recipients.map((item) => item.userId),
+      'notification.created',
+      {
+        notification: {
+          id: created.id,
+          title: created.title,
+          message: created.message,
+          targetPath: created.targetPath,
+          entityType: created.entityType,
+          category: 'system',
+        },
+      },
     );
 
     return created;
   }
 
   async broadcast(input: BroadcastInput) {
-    const dedupedRoles = Array.from(new Set(input.targetRoles)).filter((role) => role !== input.actorRole);
-    if (dedupedRoles.length === 0) {
-      throw new BadRequestException('Pilih minimal satu role tujuan selain role pengirim.');
-    }
+    const targetRoles = Array.from(new Set(input.targetRoles.filter((role) => role !== input.actorRole)));
+    const recipients = await this.resolveRecipients(targetRoles, input.actorUserId);
 
-    const recipients = await this.resolveRecipients(dedupedRoles, input.actorUserId);
-    if (recipients.length === 0) {
-      throw new BadRequestException('Tidak ada user aktif pada role tujuan.');
+    if (!recipients.length) {
+      return null;
     }
 
     const created = await this.prisma.notification.create({
       data: {
-        type: 'BROADCAST',
-        title: input.title.trim(),
-        message: input.message.trim(),
+        type: 'BROADCAST_MESSAGE',
+        title: input.title,
+        message: input.message,
         entityType: 'broadcast',
-        entityId: null,
         targetPath: '/broadcasts',
         createdByUserId: input.actorUserId,
         recipients: {
-          create: recipients.map((user) => ({
-            userId: user.id_user,
-            roleSnapshot: user.role,
-          })),
+          create: recipients,
+        },
+      },
+      include: {
+        recipients: {
+          select: { userId: true, roleSnapshot: true },
         },
       },
     });
 
-    await this.emitDelivery(
-      recipients.map((user) => user.id_user),
-      'broadcast',
-      created,
+    this.realtimeStreamService.publishToUsers(
+      created.recipients.map((item) => item.userId),
+      'broadcast.created',
+      {
+        notification: {
+          id: created.id,
+          title: created.title,
+          message: created.message,
+          targetPath: created.targetPath,
+          entityType: created.entityType,
+          category: 'broadcast',
+        },
+      },
     );
 
     return created;
   }
 
-  listForUser(userId: number, category: NotificationCategory, options?: { search?: string; unreadOnly?: boolean; sort?: 'newest' | 'oldest' }) {
+  listForUser(userId: number, kind: NotificationKind, options?: ListOptions) {
     const search = options?.search?.trim();
+
     return this.prisma.notificationRecipient.findMany({
       where: {
         userId,
         ...(options?.unreadOnly ? { isRead: false } : {}),
         notification: {
-          ...this.getTypeFilter(category),
+          type: this.buildTypeFilter(kind),
           ...(search
             ? {
                 OR: [
@@ -178,43 +172,43 @@ export class NotificationsService {
     });
   }
 
-  unreadCount(userId: number, category: NotificationCategory) {
+  async unreadCount(userId: number, kind: NotificationKind) {
     return this.prisma.notificationRecipient.count({
       where: {
         userId,
         isRead: false,
-        notification: this.getTypeFilter(category),
+        notification: { type: this.buildTypeFilter(kind) },
       },
     });
   }
 
-  async markRead(userId: number, notificationId: number, category: NotificationCategory) {
+  async markRead(userId: number, notificationId: number, kind: NotificationKind) {
     return this.prisma.notificationRecipient.updateMany({
       where: {
         userId,
         notificationId,
-        notification: this.getTypeFilter(category),
+        notification: { type: this.buildTypeFilter(kind) },
       },
-      data: { isRead: true, readAt: new Date(), isSeen: true, seenAt: new Date() },
+      data: { isRead: true, readAt: new Date() },
     });
   }
 
-  async markAllRead(userId: number, category: NotificationCategory) {
+  async markAllRead(userId: number, kind: NotificationKind) {
     return this.prisma.notificationRecipient.updateMany({
       where: {
         userId,
         isRead: false,
-        notification: this.getTypeFilter(category),
+        notification: { type: this.buildTypeFilter(kind) },
       },
-      data: { isRead: true, readAt: new Date(), isSeen: true, seenAt: new Date() },
+      data: { isRead: true, readAt: new Date() },
     });
   }
 
-  async clearAll(userId: number, category: NotificationCategory) {
+  async clearAll(userId: number, kind: NotificationKind) {
     const recipients = await this.prisma.notificationRecipient.findMany({
       where: {
         userId,
-        notification: this.getTypeFilter(category),
+        notification: { type: this.buildTypeFilter(kind) },
       },
       select: { notificationId: true },
     });
@@ -229,7 +223,7 @@ export class NotificationsService {
       const deletedRecipients = await tx.notificationRecipient.deleteMany({
         where: {
           userId,
-          notificationId: { in: notificationIds },
+          notification: { type: this.buildTypeFilter(kind) },
         },
       });
 
@@ -242,7 +236,9 @@ export class NotificationsService {
       });
 
       if (orphanNotifications.length > 0) {
-        await tx.notification.deleteMany({ where: { id: { in: orphanNotifications.map((item) => item.id) } } });
+        await tx.notification.deleteMany({
+          where: { id: { in: orphanNotifications.map((item) => item.id) } },
+        });
       }
 
       return deletedRecipients.count;

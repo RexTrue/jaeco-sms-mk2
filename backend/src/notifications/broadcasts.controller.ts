@@ -1,7 +1,10 @@
+/* eslint-disable prettier/prettier */
 import { BadRequestException, Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { parseToken } from '../common/auth';
 import { NotificationsService } from './notifications.service';
+
+const allowedRoles: Role[] = ['ADMIN', 'MANAGER', 'FRONTLINE', 'MEKANIK'];
 
 @Controller('broadcasts')
 export class BroadcastsController {
@@ -32,10 +35,6 @@ export class BroadcastsController {
       createdAt: item.notification.createdAt,
       isRead: item.isRead,
       readAt: item.readAt,
-      isSeen: item.isSeen,
-      seenAt: item.seenAt,
-      roleSnapshot: item.roleSnapshot,
-      category: 'broadcast',
     }));
   }
 
@@ -72,23 +71,48 @@ export class BroadcastsController {
   }
 
   @Post()
-  async createBroadcast(
-    @Body() body: { title: string; message: string; targetRoles: Role[] },
-    @Headers('authorization') authorization?: string,
+  async create(
+    @Headers('authorization') authorization: string | undefined,
+    @Body()
+    body: {
+      title?: string;
+      message?: string;
+      targetRoles?: Role[];
+    },
   ) {
     const actor = parseToken(authorization);
-    if (!body.title?.trim() || !body.message?.trim()) {
+    const title = body.title?.trim();
+    const message = body.message?.trim();
+    const targetRoles = Array.from(new Set((body.targetRoles ?? []).filter((role): role is Role => allowedRoles.includes(role))));
+
+    if (!title || !message) {
       throw new BadRequestException('Judul dan pesan broadcast wajib diisi.');
     }
 
+    const filteredRoles = targetRoles.filter((role) => role !== actor.role);
+    if (filteredRoles.length === 0) {
+      throw new BadRequestException('Pilih minimal satu role tujuan selain role pengirim.');
+    }
+
     const notification = await this.notificationsService.broadcast({
-      title: body.title,
-      message: body.message,
-      targetRoles: Array.isArray(body.targetRoles) ? body.targetRoles : [],
-      actorRole: actor.role,
+      title,
+      message,
       actorUserId: actor.id_user,
+      actorRole: actor.role,
+      targetRoles: filteredRoles,
     });
 
-    return { success: true, notificationId: notification.id };
+    if (!notification) {
+      throw new BadRequestException('Tidak ada penerima broadcast aktif yang sesuai.');
+    }
+
+    return {
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      createdAt: notification.createdAt,
+      targetPath: notification.targetPath,
+      recipientCount: notification.recipients.length,
+    };
   }
 }

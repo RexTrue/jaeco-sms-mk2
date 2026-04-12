@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/common/components/ui/card';
@@ -7,29 +8,33 @@ import { DashboardConfig } from '@/modules/dashboard/types/dashboard.types';
 import { useUnseenRefresh } from '@/common/hooks/use-unseen-refresh';
 import { dashboardTone } from '@/modules/dashboard/lib/dashboard-tone';
 import { cn } from '@/common/utils/cn';
+import { getPreferredDisplayName } from '@/common/lib/display-name';
 import type { Service, WorkOrder } from '@/common/types/domain';
 
 export function DashboardHeroSection({ config, services, workOrders }: { config: DashboardConfig; services: Service[]; workOrders: WorkOrder[] }) {
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
+  const currentUser = useAuthStore((state) => state.user);
   const monitoringCards = config.monitoringCards ?? [];
   useUnseenRefresh();
   const workOrderBadgeCount = getValidUnseenCount(role, 'work-orders', workOrders.map((item) => item.id_wo));
   const serviceBadgeCount = getValidUnseenCount(role, 'services', services.map((item) => item.id_wo));
   const serviceStatusBadgeCounts = useMemo(() => getUnseenServiceStatusCounts(role, services), [role, services]);
+  const displayName = getPreferredDisplayName(currentUser);
 
   return (
     <section className="grid gap-4 xl:grid-cols-[1.28fr_0.72fr]">
       <Card className="dashboard-surface overflow-hidden">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] theme-muted">{config.eyebrow}</p>
+          <p className="mt-3 text-lg font-semibold theme-text">Halo, {displayName}</p>
           <div className="mt-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <h2 className="section-title">{config.heading}</h2>
             <p className="dashboard-support-copy max-w-2xl text-sm leading-6">
-              Tampilan ringkasan cepat untuk memantau kondisi operasional.
+              Ringkasan kondisi operasional dan akses cepat sesuai tugas Anda.
             </p>
           </div>
-          <div className="mt-6 grid gap-4 xl:grid-cols-3">
+          <div className="mt-6 grid grid-cols-2 gap-4">
             {monitoringCards.map((item) => {
               const tone = dashboardTone[item.tone] ?? dashboardTone.info;
               const badgeCount = item.unseenSection === 'work-orders'
@@ -46,7 +51,7 @@ export function DashboardHeroSection({ config, services, workOrders }: { config:
                   type="button"
                   onClick={() => navigate(item.href)}
                   className={cn(
-                    'dashboard-interactive-card flex min-h-[184px] flex-col justify-between rounded-[24px] border p-5 text-left md:p-6',
+                    'dashboard-interactive-card flex min-h-[176px] flex-col justify-between rounded-[24px] border p-4 text-left md:min-h-[184px] md:p-6',
                     tone.panel,
                   )}
                 >
@@ -62,7 +67,7 @@ export function DashboardHeroSection({ config, services, workOrders }: { config:
                     </div>
                     <p className={cn('text-4xl font-semibold leading-none tracking-tight md:text-5xl', tone.value)}>{item.value}</p>
                   </div>
-                  <p className={cn('text-sm leading-6', tone.note)}>{item.note}</p>
+                  <p className={cn('text-xs leading-5 md:text-sm md:leading-6', tone.note)}>{item.note}</p>
                 </button>
               );
             })}

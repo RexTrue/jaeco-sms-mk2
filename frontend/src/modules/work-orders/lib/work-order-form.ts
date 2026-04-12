@@ -26,16 +26,9 @@ export const workOrderSchema = z.object({
 
 export type WorkOrderFormValues = z.infer<typeof workOrderSchema>;
 
-export const vehicleOptions = [
-  'JAECOO J5 EV PREMIUM',
-  'JAECOO J5 EV',
-  'JAECOO J5 PHEV',
-  'JAECOO J7 SHS-P',
-  'JAECOO J7 AWD',
-  'JAECOO J8 AWD',
-  'JAECOO J8 ARDIS',
-  'JAECOO J8 SHS-P ARDIS',
-] as const;
+import { VEHICLE_OPTIONS } from '@/common/lib/vehicle-catalog';
+
+export const vehicleOptions = VEHICLE_OPTIONS;
 
 function toDatetimeLocal(value?: string | null) {
   if (!value) return '';
@@ -55,7 +48,7 @@ export function getDefaultWorkOrderFormValues(): WorkOrderFormValues {
     no_hp: '',
     alamat: '',
     plat_nomor: '',
-    jenis_mobil: 'JAECOO J5 EV PREMIUM',
+    jenis_mobil: 'JAECOO J5 EV',
     warna: '',
     no_rangka: '',
     kilometer: 0,
@@ -83,7 +76,7 @@ export function buildWorkOrderFormValues(workOrder: WorkOrder): WorkOrderFormVal
     no_hp: customer?.no_hp ?? '',
     alamat: customer?.alamat ?? '',
     plat_nomor: vehicle?.plat_nomor ?? '',
-    jenis_mobil: vehicle?.jenis_mobil ?? 'JAECOO J5 EV PREMIUM',
+    jenis_mobil: vehicle?.jenis_mobil ?? 'JAECOO J5 EV',
     warna: vehicle?.warna ?? '',
     no_rangka: workOrder.no_rangka ?? vehicle?.no_rangka ?? '',
     kilometer: vehicle?.kilometer ?? 0,

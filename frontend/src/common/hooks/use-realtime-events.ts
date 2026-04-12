@@ -4,20 +4,8 @@ import { endpoints } from '@/services/endpoints';
 import { apiClient } from '@/services/api-client';
 import { authStorage } from '@/services/auth-storage';
 import { queryKeys } from '@/services/query-keys';
-import { showNotificationFromPayload } from '@/common/lib/browser-notifications';
 
-type EventPayload = {
-  notification?: {
-    id: number;
-    title: string;
-    message: string;
-    targetPath?: string | null;
-    entityType?: string | null;
-    category?: 'system' | 'broadcast';
-  };
-};
-
-export function useRealtimeEvents(enabled: boolean) {
+export function useRealtimeEvents(enabled = true) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -25,9 +13,8 @@ export function useRealtimeEvents(enabled: boolean) {
     const token = authStorage.getToken();
     if (!token) return;
 
-    const streamUrl = new URL(`${apiClient.defaults.baseURL}${endpoints.events.stream}`);
-    streamUrl.searchParams.set('token', token);
-    const source = new EventSource(streamUrl.toString());
+    let source: EventSource | null = null;
+    let reconnectTimer: number | null = null;
 
     const invalidateCore = () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
@@ -39,33 +26,35 @@ export function useRealtimeEvents(enabled: boolean) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.dashboard });
     };
 
-    const handleMessage = (event: MessageEvent<string>) => {
-      try {
-        const parsed = JSON.parse(event.data) as EventPayload;
-        if (parsed.notification) {
-          showNotificationFromPayload(parsed.notification);
-        }
-      } catch {
-        // ignore malformed payload
-      }
-      invalidateCore();
-    };
+    const connect = () => {
+      const streamUrl = new URL(`${apiClient.defaults.baseURL}${endpoints.events.stream}`);
+      streamUrl.searchParams.set('token', token);
+      source = new EventSource(streamUrl.toString());
 
-    source.addEventListener('notification.created', handleMessage as EventListener);
-    source.addEventListener('broadcast.created', handleMessage as EventListener);
-    source.addEventListener('ready', invalidateCore as EventListener);
-
-    source.onerror = () => {
-      source.close();
-      window.setTimeout(() => {
+      const handleMessage = () => {
         invalidateCore();
-      }, 1500);
+      };
+
+      source.addEventListener('notification.created', handleMessage as EventListener);
+      source.addEventListener('broadcast.created', handleMessage as EventListener);
+      source.addEventListener('ready', handleMessage as EventListener);
+
+      source.onerror = () => {
+        source?.close();
+        if (reconnectTimer) {
+          window.clearTimeout(reconnectTimer);
+        }
+        reconnectTimer = window.setTimeout(connect, 1500);
+      };
     };
+
+    connect();
 
     return () => {
-      source.removeEventListener('notification.created', handleMessage as EventListener);
-      source.removeEventListener('broadcast.created', handleMessage as EventListener);
-      source.close();
+      if (reconnectTimer) {
+        window.clearTimeout(reconnectTimer);
+      }
+      source?.close();
     };
   }, [enabled, queryClient]);
 }

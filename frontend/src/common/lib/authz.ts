@@ -60,7 +60,14 @@ export const rolePermissions: Record<Role, Permission[]> = {
     'notifications:view',
     'broadcasts:view',
   ],
-  MEKANIK: ['dashboard:view', 'work-orders:view', 'services:view', 'services:update', 'notifications:view', 'broadcasts:view'],
+  MEKANIK: [
+    'dashboard:view',
+    'work-orders:view',
+    'services:view',
+    'services:update',
+    'notifications:view',
+    'broadcasts:view',
+  ],
 };
 
 const routePermissionMatchers: Array<{ pattern: RegExp; permission: Permission }> = [

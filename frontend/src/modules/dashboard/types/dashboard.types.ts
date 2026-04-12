@@ -9,6 +9,7 @@ export type DashboardWorkOrderItem = { wo: string; plate: string; model: string;
 export type DashboardTimelineItem = { time: string; text: string; status: ServiceStatus };
 export type DashboardPriorityItem = { title: string; status: ServiceStatus; note: string; href: string };
 export type DashboardMonitoringCard = { label: string; value: string; note: string; tone: DashboardToneKey; href: string; unseenSection?: 'work-orders' | 'services'; unseenStatus?: ServiceStatus };
+export type DashboardQuickAction = { label: string; note: string; href: string; badgeCount?: number; accent?: 'blue' | 'emerald' | 'amber' | 'rose' };
 
 export type DashboardConfig = {
   eyebrow: string;
@@ -18,6 +19,7 @@ export type DashboardConfig = {
   focusCards: DashboardFocusCard[];
   kpis: DashboardKpiCard[];
   monitoringCards?: DashboardMonitoringCard[];
+  quickActions?: DashboardQuickAction[];
   statusCounts: Record<ServiceStatus, number>;
   timeline: DashboardTimelineItem[];
   activeList: DashboardWorkOrderItem[];

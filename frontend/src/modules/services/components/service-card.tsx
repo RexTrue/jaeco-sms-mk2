@@ -4,6 +4,7 @@ import { Card } from '@/common/components/ui/card';
 import { StatusBadge } from '@/common/components/data-display/status-badge';
 import { formatWorkOrderCode } from '@/common/lib/work-order-code';
 import { Button } from '@/common/components/ui/button';
+import { TrashIcon } from '@/common/components/ui/action-icons';
 import { serviceStatusGlowMap, serviceStatusPanelMap } from '@/common/lib/status-appearance';
 
 const priorityMap = {
@@ -29,7 +30,7 @@ export function ServiceCard({ service }: { service: Service }) {
       <div className="action-strip pt-1">
         <Link to={`/services/${service.id_servis}`}><Button variant="secondary" type="button">Detail</Button></Link>
         <Button variant="secondary" type="button">Edit</Button>
-        <Button variant="danger" type="button">Hapus</Button>
+        <Button variant="danger" type="button"><TrashIcon className="mr-2 h-4 w-4" />Hapus</Button>
       </div>
     </Card>
   );

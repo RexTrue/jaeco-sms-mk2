@@ -46,19 +46,21 @@ enum WashRequestStatus {
   SELESAI
 }
 
+
 model User {
-  id_user                Int                     @id @default(autoincrement())
-  email                  String                  @unique
-  password               String
-  role                   Role
-  isActive               Boolean                 @default(true)
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  createdWorkOrders      WorkOrder[]             @relation("WorkOrderCreatedBy")
-  auditLogs              AuditLog[]
-  createdNotifications   Notification[]          @relation("NotificationCreatedBy")
+  id_user   Int      @id @default(autoincrement())
+  fullName  String?
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdWorkOrders     WorkOrder[]      @relation("WorkOrderCreatedBy")
+  auditLogs             AuditLog[]
+  createdNotifications  Notification[]   @relation("NotificationCreatedBy")
   notificationRecipients NotificationRecipient[]
-  pushSubscriptions      PushSubscription[]
 }
 
 model Pemilik {
@@ -87,86 +89,99 @@ model Kendaraan {
 }
 
 model WorkOrder {
-  id_wo              Int             @id @default(autoincrement())
-  nomor_wo_pusat     String?
-  waktuMasuk         DateTime        @default(now())
-  status             WorkOrderStatus @default(OPEN)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  no_rangka          String
-  kendaraan          Kendaraan       @relation(fields: [no_rangka], references: [no_rangka], onDelete: Cascade)
+  id_wo           Int             @id @default(autoincrement())
+  nomor_wo_pusat  String?
+  waktuMasuk      DateTime        @default(now())
+  status          WorkOrderStatus @default(OPEN)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  no_rangka       String
+  kendaraan       Kendaraan @relation(fields: [no_rangka], references: [no_rangka], onDelete: Cascade)
+
   created_by_user_id Int?
-  createdBy          User?           @relation("WorkOrderCreatedBy", fields: [created_by_user_id], references: [id_user], onDelete: SetNull)
-  servis             Servis[]
+  createdBy        User?     @relation("WorkOrderCreatedBy", fields: [created_by_user_id], references: [id_user], onDelete: SetNull)
+
+  servis Servis[]
 }
 
 model Servis {
-  id_servis        Int               @id @default(autoincrement())
-  keluhan          String
-  estimasiSelesai  DateTime?
-  tanggalSelesai   DateTime?
-  status           StatusServis      @default(ANTRIAN)
-  prioritas        PriorityLevel     @default(NORMAL)
-  statusCuciMobil  WashRequestStatus @default(TIDAK_PERLU)
-  catatanCuciMobil String?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  id_wo            Int
-  workOrder        WorkOrder         @relation(fields: [id_wo], references: [id_wo], onDelete: Cascade)
-  detail_servis    DetailServis[]
-  catatan          CatatanMekanik[]
-  riwayat          RiwayatServis[]
+  id_servis         Int               @id @default(autoincrement())
+  keluhan           String
+  estimasiSelesai   DateTime?
+  tanggalSelesai    DateTime?
+  status            StatusServis      @default(ANTRIAN)
+  prioritas         PriorityLevel     @default(NORMAL)
+  statusCuciMobil   WashRequestStatus @default(TIDAK_PERLU)
+  catatanCuciMobil  String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  id_wo     Int
+  workOrder WorkOrder @relation(fields: [id_wo], references: [id_wo], onDelete: Cascade)
+
+  detail_servis DetailServis[]
+  catatan       CatatanMekanik[]
+  riwayat       RiwayatServis[]
 }
 
 model JenisServis {
-  id_jenis_servis Int      @id @default(autoincrement())
-  nama_servis     String   @unique
+  id_jenis_servis Int    @id @default(autoincrement())
+  nama_servis     String @unique
   createdAt       DateTime @default(now())
 
   detail_servis DetailServis[]
 }
 
 model DetailServis {
-  id_detail        Int          @id @default(autoincrement())
-  id_servis        Int
-  servis           Servis       @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
-  id_jenis_servis  Int
-  jenis_servis     JenisServis  @relation(fields: [id_jenis_servis], references: [id_jenis_servis], onDelete: Restrict)
-  keterangan       String?
+  id_detail Int @id @default(autoincrement())
+
+  id_servis Int
+  servis    Servis @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
+
+  id_jenis_servis Int
+  jenis_servis    JenisServis @relation(fields: [id_jenis_servis], references: [id_jenis_servis], onDelete: Restrict)
+
+  keterangan String?
 }
 
 model CatatanMekanik {
-  id_catatan Int      @id @default(autoincrement())
-  id_servis  Int
-  servis     Servis   @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
-  catatan    String
-  waktu      DateTime @default(now())
+  id_catatan Int @id @default(autoincrement())
+
+  id_servis Int
+  servis    Servis @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
+
+  catatan String
+  waktu   DateTime @default(now())
 }
 
 model RiwayatServis {
-  id_riwayat Int          @id @default(autoincrement())
-  id_servis  Int
-  servis     Servis       @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
-  status     StatusServis
-  waktu      DateTime     @default(now())
+  id_riwayat Int @id @default(autoincrement())
+
+  id_servis Int
+  servis    Servis @relation(fields: [id_servis], references: [id_servis], onDelete: Cascade)
+
+  status StatusServis
+  waktu  DateTime @default(now())
 }
 
+
 model AuditLog {
-  id          Int            @id @default(autoincrement())
-  createdAt   DateTime       @default(now())
-  actorUserId Int?
-  actorEmail  String?
-  actorRole   Role?
-  action      String
-  module      String
-  entityType  String?
-  entityId    String?
-  entityLabel String?
-  status      AuditLogStatus @default(SUCCESS)
-  message     String?
-  metadata    Json?
-  ipAddress   String?
-  userAgent   String?
+  id            Int            @id @default(autoincrement())
+  createdAt     DateTime       @default(now())
+  actorUserId   Int?
+  actorEmail    String?
+  actorRole     Role?
+  action        String
+  module        String
+  entityType    String?
+  entityId      String?
+  entityLabel   String?
+  status        AuditLogStatus @default(SUCCESS)
+  message       String?
+  metadata      Json?
+  ipAddress     String?
+  userAgent     String?
 
   actorUser User? @relation(fields: [actorUserId], references: [id_user], onDelete: SetNull)
 
@@ -176,53 +191,35 @@ model AuditLog {
   @@index([status])
 }
 
-model Notification {
-  id              Int                     @id @default(autoincrement())
-  type            String
-  title           String
-  message         String
-  entityType      String?
-  entityId        String?
-  targetPath      String?
-  createdAt       DateTime                @default(now())
-  createdByUserId Int?
-  createdBy       User?                   @relation("NotificationCreatedBy", fields: [createdByUserId], references: [id_user], onDelete: SetNull)
-  recipients      NotificationRecipient[]
 
-  @@index([type, createdAt])
+model Notification {
+  id             Int      @id @default(autoincrement())
+  type           String
+  title          String
+  message        String
+  entityType     String?
+  entityId       String?
+  targetPath     String?
+  createdAt      DateTime @default(now())
+  createdByUserId Int?
+
+  createdBy  User? @relation("NotificationCreatedBy", fields: [createdByUserId], references: [id_user], onDelete: SetNull)
+  recipients NotificationRecipient[]
+
   @@index([createdAt])
 }
 
 model NotificationRecipient {
-  id             Int          @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   notificationId Int
   userId         Int
   roleSnapshot   Role
-  isRead         Boolean      @default(false)
+  isRead         Boolean  @default(false)
   readAt         DateTime?
-  isSeen         Boolean      @default(false)
-  seenAt         DateTime?
-  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id_user], onDelete: Cascade)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id_user], onDelete: Cascade)
 
   @@unique([notificationId, userId])
   @@index([userId, isRead])
-  @@index([userId, isSeen])
-}
-
-model PushSubscription {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  endpoint   String   @unique
-  p256dh     String
-  auth       String
-  userAgent  String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  lastUsedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id_user], onDelete: Cascade)
-
-  @@index([userId, isActive])
 }

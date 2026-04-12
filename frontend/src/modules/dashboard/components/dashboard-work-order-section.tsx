@@ -1,3 +1,4 @@
+
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/common/components/ui/card';
 import { StatusBadge } from '@/common/components/data-display/status-badge';
@@ -8,9 +9,15 @@ import { getValidUnseenCount } from '@/common/lib/unseen-notifications';
 import { useUnseenRefresh } from '@/common/hooks/use-unseen-refresh';
 
 function getSectionTitle(role?: DashboardConfig['role']) {
-  if (role === 'MEKANIK') return 'Progress Kendaraan';
+  if (role === 'MEKANIK') return 'Daftar Unit Bengkel';
   if (role === 'FRONTLINE') return 'Daftar Tindak Lanjut';
-  return 'Active List';
+  return 'Daftar Unit Aktif';
+}
+
+function getSectionCopy(role?: DashboardConfig['role']) {
+  if (role === 'MEKANIK') return 'Maksimal 20 unit terbaru untuk memantau pekerjaan yang sedang berjalan.';
+  if (role === 'FRONTLINE') return 'Maksimal 20 unit terbaru yang perlu dipantau dari meja depan.';
+  return 'Maksimal 20 unit terbaru untuk pemantauan harian bengkel.';
 }
 
 export function DashboardWorkOrderSection({ config, workOrderIds }: { config: DashboardConfig; workOrderIds: number[] }) {
@@ -24,10 +31,11 @@ export function DashboardWorkOrderSection({ config, workOrderIds }: { config: Da
       <Card className="dashboard-surface">
         <div>
           <p className="text-xs uppercase tracking-[0.28em] theme-muted">Work Order</p>
-          <div className="mt-3 flex items-center gap-2">
-            <h3 className="text-xl font-semibold">{getSectionTitle(config.role)}</h3>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <h3 className="text-xl font-semibold theme-text">{getSectionTitle(config.role)}</h3>
             {workOrderBadgeCount > 0 ? <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-[0_0_0_4px_rgba(239,68,68,0.18)]">{workOrderBadgeCount}</span> : null}
           </div>
+          <p className="mt-2 text-sm leading-6 theme-muted">{getSectionCopy(config.role)}</p>
         </div>
 
         <div className="mt-5 overflow-hidden rounded-[24px] border border-[color:var(--line)]">
@@ -64,13 +72,15 @@ export function DashboardWorkOrderSection({ config, workOrderIds }: { config: Da
                       <p className="font-semibold">{item.wo}</p>
                       {item.isNew ? <span className="inline-flex h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.18)]" aria-label="Baru" /> : null}
                     </div>
-                    <p className="mt-1 truncate text-xs theme-muted">{item.plate}</p>
+                    <p className="mt-1 text-xs theme-muted">{item.plate}</p>
                   </div>
-                  <span>{item.model}</span>
                   <div className="min-w-0">
+                    <p className="truncate">{item.model}</p>
+                  </div>
+                  <div className="flex items-center">
                     <StatusBadge status={item.status} />
                   </div>
-                  <span>{item.time}</span>
+                  <div className="text-sm theme-text">{item.time}</div>
                 </div>
               </button>
             ))}

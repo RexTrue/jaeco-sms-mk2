@@ -1,3 +1,12 @@
+import { useEffect, useState } from 'react';
+import { subscribeToUnseenChanges } from '@/common/lib/unseen-notifications';
+
 export function useUnseenRefresh() {
-  return 0;
+  const [revision, setRevision] = useState(0);
+
+  useEffect(() => subscribeToUnseenChanges(() => {
+    setRevision((current) => current + 1);
+  }), []);
+
+  return revision;
 }

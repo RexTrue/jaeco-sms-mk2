@@ -47,6 +47,7 @@ export class UsersController {
   async create(
     @Body()
     body: {
+      fullName?: string;
       email: string;
       password: string;
       role: Role;
@@ -92,6 +93,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body()
     body: {
+      fullName?: string;
       email?: string;
       role?: Role;
       isActive?: boolean;

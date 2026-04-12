@@ -23,6 +23,7 @@ import { WorkOrdersService } from './work-orders.service';
 import { parseToken } from '../common/auth';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { buildWorkOrderCreatedMessage, buildWorkOrderStatusMessage, buildWorkOrderUpdatedMessage } from '../notifications/notification-message.util';
 
 @Controller('work-orders')
 export class WorkOrdersController {
@@ -96,10 +97,16 @@ export class WorkOrdersController {
         throw new InternalServerErrorException('Work order gagal dibuat.');
       }
 
+      const createdMessage = buildWorkOrderCreatedMessage({
+        nomorWo: created.nomor_wo_pusat ?? created.id_wo,
+        plateNumber: created.kendaraan?.plat_nomor,
+        carType: created.kendaraan?.jenis_mobil,
+      });
+
       await this.notificationsService.create({
         type: 'WORK_ORDER_CREATED',
-        title: 'Work order baru masuk',
-        message: `Work order ${created.nomor_wo_pusat ?? created.id_wo} berhasil dibuat.`,
+        title: createdMessage.title,
+        message: createdMessage.message,
         entityType: 'work-order',
         entityId: created.id_wo,
         targetPath: `/work-orders`,
@@ -192,10 +199,26 @@ export class WorkOrdersController {
         throw new InternalServerErrorException('Work order gagal diperbarui.');
       }
 
+      const workOrderMessage = body.status && body.status !== before.status
+        ? buildWorkOrderStatusMessage(
+            {
+              nomorWo: updated.nomor_wo_pusat ?? workOrderId,
+              plateNumber: updated.kendaraan?.plat_nomor,
+              carType: updated.kendaraan?.jenis_mobil,
+            },
+            before.status,
+            body.status,
+          )
+        : buildWorkOrderUpdatedMessage({
+            nomorWo: updated.nomor_wo_pusat ?? workOrderId,
+            plateNumber: updated.kendaraan?.plat_nomor,
+            carType: updated.kendaraan?.jenis_mobil,
+          });
+
       await this.notificationsService.create({
         type: 'WORK_ORDER_UPDATED',
-        title: 'Work order diperbarui',
-        message: `Work order ${updated.nomor_wo_pusat ?? workOrderId} telah diperbarui.`,
+        title: workOrderMessage.title,
+        message: workOrderMessage.message,
         entityType: 'work-order',
         entityId: workOrderId,
         targetPath: `/work-orders`,

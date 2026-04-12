@@ -6,6 +6,7 @@ export type AuthUser = {
   id_user: number;
   email: string;
   role: Role;
+  fullName?: string | null;
 };
 
 type JwtPayload = AuthUser & {
@@ -30,8 +31,13 @@ export function signToken(user: AuthUser): string {
   });
 }
 
-export function parseAccessToken(raw: string): AuthUser {
+export function parseToken(header?: string): AuthUser {
+  if (!header?.startsWith('Bearer ')) {
+    throw new UnauthorizedException('Token tidak ditemukan.');
+  }
+
   try {
+    const raw = header.slice(7);
     const payload = jwt.verify(raw, getJwtSecret(), {
       issuer: 'jaecoo-backend',
       audience: 'jaecoo-frontend',
@@ -45,18 +51,11 @@ export function parseAccessToken(raw: string): AuthUser {
       id_user: payload.id_user,
       email: payload.email,
       role: payload.role,
+      fullName: payload.fullName ?? null,
     };
   } catch {
     throw new UnauthorizedException('Token tidak valid atau kedaluwarsa.');
   }
-}
-
-export function parseToken(header?: string): AuthUser {
-  if (!header?.startsWith('Bearer ')) {
-    throw new UnauthorizedException('Token tidak ditemukan.');
-  }
-
-  return parseAccessToken(header.slice(7));
 }
 
 export function parseOptionalDate(value?: string | null): Date | null {

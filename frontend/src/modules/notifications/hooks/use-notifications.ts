@@ -5,38 +5,33 @@ import {
   clearNotifications,
   getBroadcasts,
   getBroadcastUnreadCount,
-  getNotifications,
   getNotificationUnreadCount,
+  getNotifications,
   markAllBroadcastsRead,
   markAllNotificationsRead,
   markBroadcastRead,
   markNotificationRead,
   sendBroadcast,
 } from '@/modules/notifications/services/notification-api';
+import { dismissItem } from '@/common/lib/dismissed-items';
 import type { NotificationFilter } from '@/modules/notifications/types/notification.types';
-import type { Role } from '@/common/types/domain';
+import type { AppNotification, Role } from '@/common/types/domain';
 
-function invalidateNotifications(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
-}
+const FALLBACK_REFETCH_MS = 4000;
 
-function invalidateBroadcasts(queryClient: ReturnType<typeof useQueryClient>) {
-  void queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
-  void queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount });
+function removeItemFromCaches(queryClient: ReturnType<typeof useQueryClient>, namespace: 'notifications' | 'broadcasts', id: number) {
+  const queryPrefix = namespace === 'notifications' ? 'notifications' : 'broadcasts';
+  queryClient.setQueriesData<AppNotification[]>({ queryKey: [queryPrefix] }, (current) => {
+    if (!Array.isArray(current)) return current;
+    return current.filter((item) => item.id !== id);
+  });
 }
 
 export function useNotifications(filters: NotificationFilter) {
   return useQuery({
     queryKey: queryKeys.notifications(filters),
     queryFn: () => getNotifications(filters),
-  });
-}
-
-export function useBroadcasts(filters: NotificationFilter) {
-  return useQuery({
-    queryKey: queryKeys.broadcasts(filters),
-    queryFn: () => getBroadcasts(filters),
+    refetchInterval: FALLBACK_REFETCH_MS,
   });
 }
 
@@ -44,13 +39,7 @@ export function useNotificationUnreadCount() {
   return useQuery({
     queryKey: queryKeys.notificationsUnreadCount,
     queryFn: getNotificationUnreadCount,
-  });
-}
-
-export function useBroadcastUnreadCount() {
-  return useQuery({
-    queryKey: queryKeys.broadcastsUnreadCount,
-    queryFn: getBroadcastUnreadCount,
+    refetchInterval: FALLBACK_REFETCH_MS,
   });
 }
 
@@ -59,17 +48,22 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: (id: number) => markNotificationRead(id),
     onSuccess: () => {
-      invalidateNotifications(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     },
   });
 }
 
-export function useMarkBroadcastRead() {
+export function useDismissNotification() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => markBroadcastRead(id),
-    onSuccess: () => {
-      invalidateBroadcasts(queryClient);
+    mutationFn: async (id: number) => {
+      dismissItem('notifications', id);
+      return id;
+    },
+    onSuccess: (id) => {
+      removeItemFromCaches(queryClient, 'notifications', id);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     },
   });
 }
@@ -79,17 +73,8 @@ export function useMarkAllNotificationsRead() {
   return useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => {
-      invalidateNotifications(queryClient);
-    },
-  });
-}
-
-export function useMarkAllBroadcastsRead() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: markAllBroadcastsRead,
-    onSuccess: () => {
-      invalidateBroadcasts(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
     },
   });
 }
@@ -99,7 +84,60 @@ export function useClearNotifications() {
   return useMutation({
     mutationFn: clearNotifications,
     onSuccess: () => {
-      invalidateNotifications(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notificationsUnreadCount });
+    },
+  });
+}
+
+export function useBroadcasts(filters: NotificationFilter) {
+  return useQuery({
+    queryKey: queryKeys.broadcasts(filters),
+    queryFn: () => getBroadcasts(filters),
+    refetchInterval: FALLBACK_REFETCH_MS,
+  });
+}
+
+export function useBroadcastUnreadCount() {
+  return useQuery({
+    queryKey: queryKeys.broadcastsUnreadCount,
+    queryFn: getBroadcastUnreadCount,
+    refetchInterval: FALLBACK_REFETCH_MS,
+  });
+}
+
+export function useMarkBroadcastRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => markBroadcastRead(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount });
+    },
+  });
+}
+
+export function useDismissBroadcast() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      dismissItem('broadcasts', id);
+      return id;
+    },
+    onSuccess: (id) => {
+      removeItemFromCaches(queryClient, 'broadcasts', id);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount });
+    },
+  });
+}
+
+export function useMarkAllBroadcastsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: markAllBroadcastsRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount });
     },
   });
 }
@@ -109,7 +147,8 @@ export function useClearBroadcasts() {
   return useMutation({
     mutationFn: clearBroadcasts,
     onSuccess: () => {
-      invalidateBroadcasts(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ['broadcasts'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount });
     },
   });
 }
@@ -119,7 +158,14 @@ export function useSendBroadcast() {
   return useMutation({
     mutationFn: (payload: { title: string; message: string; targetRoles: Role[] }) => sendBroadcast(payload),
     onSuccess: () => {
-      invalidateBroadcasts(queryClient);
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['broadcasts'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.broadcastsUnreadCount }),
+        queryClient.refetchQueries({ queryKey: ['broadcasts'] }),
+        queryClient.refetchQueries({ queryKey: queryKeys.broadcastsUnreadCount }),
+        queryClient.refetchQueries({ queryKey: ['notifications'] }),
+        queryClient.refetchQueries({ queryKey: queryKeys.notificationsUnreadCount }),
+      ]);
     },
   });
 }

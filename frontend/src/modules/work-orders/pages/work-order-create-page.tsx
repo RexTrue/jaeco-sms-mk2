@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/common/components/ui/button';
 import { Input } from '@/common/components/ui/input';
 import { Select } from '@/common/components/ui/select';
+import { VehicleModelSelector } from '@/common/components/vehicle/vehicle-model-selector';
 import { Textarea } from '@/common/components/ui/textarea';
 import { FormShell } from '@/common/components/forms/form-shell';
 import { FormDirtyBanner } from '@/common/components/forms/form-dirty-banner';
@@ -14,7 +15,8 @@ import { useToast } from '@/common/components/feedback/toast-provider';
 import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider';
 import { useUnsavedChanges } from '@/common/hooks/use-unsaved-changes';
 import { useCreateWorkOrder } from '@/modules/work-orders/hooks/use-work-orders';
-import { buildWorkOrderPayload, getDefaultWorkOrderFormValues, vehicleOptions, workOrderSchema, type WorkOrderFormValues } from '@/modules/work-orders/lib/work-order-form';
+import { buildWorkOrderPayload, getDefaultWorkOrderFormValues, workOrderSchema, type WorkOrderFormValues } from '@/modules/work-orders/lib/work-order-form';
+import { VEHICLE_CATALOG } from '@/common/lib/vehicle-catalog';
 import { getErrorMessage } from '@/common/lib/request-error';
 
 export function WorkOrderCreatePage() {
@@ -28,11 +30,15 @@ export function WorkOrderCreatePage() {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<WorkOrderFormValues>({
     resolver: zodResolver(workOrderSchema),
     defaultValues: getDefaultWorkOrderFormValues(),
   });
+
+  const selectedModel = watch('jenis_mobil');
 
   useUnsavedChanges({ when: isDirty });
 
@@ -123,11 +129,14 @@ export function WorkOrderCreatePage() {
                 <Input id="plat_nomor" placeholder="AB1257Y" {...register('plat_nomor')} />
                 <FieldError>{errors.plat_nomor?.message}</FieldError>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <FieldLabel htmlFor="jenis_mobil">Model Kendaraan</FieldLabel>
-                <Select id="jenis_mobil" {...register('jenis_mobil')}>
-                  {vehicleOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                </Select>
+                <VehicleModelSelector
+                  name="jenis_mobil"
+                  value={selectedModel}
+                  options={VEHICLE_CATALOG}
+                  onChange={(value) => setValue('jenis_mobil', value, { shouldDirty: true, shouldValidate: true })}
+                />
                 <FieldError>{errors.jenis_mobil?.message}</FieldError>
               </div>
               <div>

@@ -16,22 +16,22 @@ const demoUsers: DemoCredential[] = [
   {
     email: 'admin@service.com',
     password: 'Admin123!',
-    user: { id_user: 1, email: 'admin@service.com', role: 'ADMIN', isActive: true },
+    user: { id_user: 1, fullName: 'Admin Service', email: 'admin@service.com', role: 'ADMIN', isActive: true },
   },
   {
     email: 'frontline@service.com',
     password: 'Frontline123!',
-    user: { id_user: 2, email: 'frontline@service.com', role: 'FRONTLINE', isActive: true },
+    user: { id_user: 2, fullName: 'Frontline Service', email: 'frontline@service.com', role: 'FRONTLINE', isActive: true },
   },
   {
     email: 'manager@service.com',
     password: 'Manager123!',
-    user: { id_user: 3, email: 'manager@service.com', role: 'MANAGER', isActive: true },
+    user: { id_user: 3, fullName: 'Manager Service', email: 'manager@service.com', role: 'MANAGER', isActive: true },
   },
   {
     email: 'mechanic@service.com',
     password: 'Mechanic123!',
-    user: { id_user: 4, email: 'mechanic@service.com', role: 'MEKANIK', isActive: true },
+    user: { id_user: 4, fullName: 'Mekanik Service', email: 'mechanic@service.com', role: 'MEKANIK', isActive: true },
   },
 ];
 

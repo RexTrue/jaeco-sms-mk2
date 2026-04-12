@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { Badge } from '@/common/components/ui/badge';
 import { Button } from '@/common/components/ui/button';
 import { Card } from '@/common/components/ui/card';
@@ -10,9 +10,10 @@ import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider
 import { useToast } from '@/common/components/feedback/toast-provider';
 import { ListCard } from '@/common/components/data-display/list-card';
 import { PageHeader } from '@/common/components/page/page-header';
+import { SearchIcon, TrashIcon } from '@/common/components/ui/action-icons';
 import { roleLabels } from '@/common/lib/authz';
 import { getErrorMessage } from '@/common/lib/request-error';
-import { useActivityLogs, useClearActivityLogs } from '@/modules/audit/hooks/use-audit-logs';
+import { useActivityLogs, useClearActivityLogs, useDismissActivityLog } from '@/modules/audit/hooks/use-audit-logs';
 import type { ActivityLog, ActivityLogFilters } from '@/modules/audit/types/audit.types';
 
 const defaultFilters: ActivityLogFilters = {
@@ -79,6 +80,7 @@ export function ActivityLogPage() {
   const [filters, setFilters] = useState<ActivityLogFilters>(defaultFilters);
   const logsQuery = useActivityLogs(filters);
   const clearLogsMutation = useClearActivityLogs();
+  const dismissLogMutation = useDismissActivityLog();
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const logs = logsQuery.data ?? [];
@@ -96,6 +98,11 @@ export function ActivityLogPage() {
     const workOrderEvents = logs.filter((item) => item.module === 'work-orders').length;
     return { total, failed, loginEvents, workOrderEvents };
   }, [logs]);
+
+  const submitFilters = (event: FormEvent) => {
+    event.preventDefault();
+    void logsQuery.refetch();
+  };
 
   return (
     <div className="space-y-5">
@@ -126,6 +133,7 @@ export function ActivityLogPage() {
               }}
               disabled={!logs.length || clearLogsMutation.isPending}
             >
+              <TrashIcon className="mr-2 h-4 w-4" />
               {clearLogsMutation.isPending ? 'Menghapus...' : 'Hapus riwayat aktivitas'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => logsQuery.refetch()} disabled={clearLogsMutation.isPending}>
@@ -163,7 +171,7 @@ export function ActivityLogPage() {
           <p className="text-xs uppercase tracking-[0.2em] theme-muted">Filter</p>
           <h2 className="mt-3 text-xl font-semibold theme-text">Telusuri aktivitas</h2>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <form onSubmit={submitFilters} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Input
             placeholder="Cari email, aksi, WO, pesan..."
             value={filters.search ?? ''}
@@ -197,9 +205,11 @@ export function ActivityLogPage() {
           <Input type="date" value={filters.dateTo ?? ''} onChange={(event) => setFilters((prev) => ({ ...prev, dateTo: event.target.value }))} />
           <div className="flex gap-3">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => setFilters(defaultFilters)}>Reset</Button>
-            <Button type="button" className="flex-1" onClick={() => logsQuery.refetch()}>Terapkan</Button>
+            <Button type="submit" variant="secondary" className="action-icon-button search-icon-button shrink-0" aria-label="Telusuri aktivitas" title="Telusuri aktivitas">
+              <SearchIcon className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
+        </form>
       </Card>
 
       {logsQuery.isLoading ? (
@@ -220,26 +230,51 @@ export function ActivityLogPage() {
               {logs.map((log) => {
                 const isSelected = selectedLog?.id === log.id;
                 return (
-                  <button key={log.id} type="button" className="block w-full text-left" onClick={() => setSelectedLogId(log.id)}>
-                    <ListCard
-                      className={isSelected ? 'border-[color:var(--accent)] bg-[color:var(--panel)]/95 shadow-[0_16px_36px_rgba(0,0,0,0.14)]' : ''}
-                      title={(
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span>{formatActionLabel(log.action)}</span>
-                          <Badge className={log.status === 'FAILED' ? 'border-red-300/30 bg-red-500/10 text-red-200' : 'border-emerald-300/30 bg-emerald-500/10 text-emerald-200'}>{log.status}</Badge>
-                          <Badge>{log.module}</Badge>
-                        </div>
-                      )}
-                      subtitle={(
-                        <>
-                          <p>{log.message ?? 'Tidak ada pesan ringkas.'}</p>
-                          <p className="mt-2">{log.actorEmail ?? 'Sistem'} • {log.actorRole ? roleLabels[log.actorRole] : 'Tanpa role'} • {formatDateTime(log.createdAt)}</p>
-                          <p className="mt-1 text-xs">{summarizeMetadata(log)}</p>
-                        </>
-                      )}
-                      meta={<span className="text-xs theme-muted">#{log.id}</span>}
-                    />
-                  </button>
+                  <ListCard
+                    key={log.id}
+                    className={isSelected ? 'border-[color:var(--accent)] bg-[color:var(--panel)]/95 shadow-[0_16px_36px_rgba(0,0,0,0.14)]' : ''}
+                    title={(
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{formatActionLabel(log.action)}</span>
+                        <Badge className={log.status === 'FAILED' ? 'border-red-300/30 bg-red-500/10 text-red-200' : 'border-emerald-300/30 bg-emerald-500/10 text-emerald-200'}>{log.status}</Badge>
+                        <Badge>{log.module}</Badge>
+                      </div>
+                    )}
+                    subtitle={(
+                      <>
+                        <p>{log.message ?? 'Tidak ada pesan ringkas.'}</p>
+                        <p className="mt-2">{log.actorEmail ?? 'Sistem'} • {log.actorRole ? roleLabels[log.actorRole] : 'Tanpa role'} • {formatDateTime(log.createdAt)}</p>
+                        <p className="mt-1 text-xs">{summarizeMetadata(log)}</p>
+                      </>
+                    )}
+                    meta={
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs theme-muted">#{log.id}</span>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="action-icon-button delete-icon-button h-9 min-h-9 w-9"
+                          aria-label={`Hapus aktivitas ${log.id}`}
+                          title="Hapus aktivitas"
+                          onClick={() => {
+                            dismissLogMutation.mutate(log.id, {
+                              onSuccess: () => {
+                                if (selectedLogId === log.id) setSelectedLogId(null);
+                                showToast({ title: 'Aktivitas dihapus', description: 'Item riwayat aktivitas telah dihapus dari daftar.', tone: 'success' });
+                              },
+                            });
+                          }}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    }
+                    footer={
+                      <button type="button" className="w-full rounded-2xl border border-[color:var(--line)] px-3 py-2 text-left text-sm theme-text transition hover:border-[color:var(--line-strong)]" onClick={() => setSelectedLogId(log.id)}>
+                        Lihat detail aktivitas
+                      </button>
+                    }
+                  />
                 );
               })}
             </div>

@@ -13,13 +13,11 @@ import { SchedulesModule } from './schedules/schedules.module';
 import { AuthGuard } from './common/auth.guard';
 import { AuditModule } from './audit/audit.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuditModule,
-    EventsModule,
     AuthModule,
     CustomersModule,
     VehiclesModule,
@@ -32,6 +30,7 @@ import { EventsModule } from './events/events.module';
   controllers: [AppController],
   providers: [
     AppService,
+    // Apply JWT authentication globally; use @Public() to opt out.
     { provide: APP_GUARD, useClass: AuthGuard },
   ],
 })

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/common/components/feedback/toast-provider';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Card } from '@/common/components/ui/card';
@@ -8,6 +8,7 @@ import { Button } from '@/common/components/ui/button';
 import { PageHeader } from '@/common/components/page/page-header';
 import { Input } from '@/common/components/ui/input';
 import { Select } from '@/common/components/ui/select';
+import { SearchIcon, TrashIcon } from '@/common/components/ui/action-icons';
 import { hasPermission } from '@/common/lib/authz';
 import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { useWorkOrders, useDeleteWorkOrder } from '@/modules/work-orders/hooks/use-work-orders';
@@ -29,11 +30,16 @@ export function WorkOrderListPage() {
   useUnseenRefresh();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = searchParams.get('search') ?? '';
+  const [searchDraft, setSearchDraft] = useState(search);
   const sortBy = searchParams.get('sort') === 'oldest' ? 'oldest' : 'newest';
   const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
 
   const deleteWorkOrderMutation = useDeleteWorkOrder();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    setSearchDraft(search);
+  }, [search]);
 
   const records = useMemo(() => {
     const allRecords = buildWorkOrderRecords({ workOrders: workOrdersQuery.data ?? [], services: servicesQuery.data ?? [], vehicles: [], customers: [] });
@@ -73,6 +79,11 @@ export function WorkOrderListPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    updateParams({ search: searchDraft.trim() || null });
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -84,7 +95,12 @@ export function WorkOrderListPage() {
       />
 
       <div className="grid gap-3 lg:grid-cols-[1fr_180px]">
-        <Input value={search} onChange={(event) => updateParams({ search: event.target.value || null })} placeholder="Cari WO, nama pemilik, plat, HP, model, status..." />
+        <form onSubmit={submitSearch} className="flex items-center gap-2">
+          <Input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Cari WO, nama pemilik, plat, HP, model, status..." />
+          <Button type="submit" variant="secondary" className="action-icon-button search-icon-button shrink-0" aria-label="Telusuri work order" title="Telusuri work order">
+            <SearchIcon className="h-4 w-4" />
+          </Button>
+        </form>
         <Select value={sortBy} onChange={(event) => updateParams({ sort: event.target.value })}>
           <option value="newest">Terbaru</option>
           <option value="oldest">Terlama</option>
@@ -153,7 +169,10 @@ export function WorkOrderListPage() {
                                 },
                               });
                             }}
-                          >{deleteWorkOrderMutation.isPending ? 'Menghapus...' : 'Hapus'}</Button>
+                          >
+                            <TrashIcon className="mr-2 h-4 w-4" />
+                            {deleteWorkOrderMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                          </Button>
                         ) : null}
                       </div>
                     </div>

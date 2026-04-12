@@ -8,11 +8,12 @@ import type {
 export type { PriorityLevel, Role, ServiceStatus, WorkOrderStatus };
 
 export type WashRequestStatus = 'TIDAK_PERLU' | 'MENUNGGU' | 'SELESAI';
+
 export type DeviceNotificationPermission = NotificationPermission | 'unsupported';
-export type NotificationCategory = 'system' | 'broadcast';
 
 export interface User {
   id_user: number;
+  fullName?: string | null;
   email: string;
   role: Role;
   isActive: boolean;
@@ -81,10 +82,6 @@ export interface AppNotification {
   createdAt: string;
   isRead: boolean;
   readAt?: string | null;
-  isSeen?: boolean;
-  seenAt?: string | null;
-  roleSnapshot?: Role;
-  category?: NotificationCategory;
 }
 
 export interface Service {

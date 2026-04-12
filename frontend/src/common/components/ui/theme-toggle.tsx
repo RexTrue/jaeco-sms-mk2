@@ -22,7 +22,7 @@ export function ThemeToggle({ className = '' }: ThemeToggleProps) {
       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[color:var(--panel-light)] text-base shadow-inner">
         {theme === 'dark' ? '☀' : '☾'}
       </span>
-      <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+      <span className="max-sm:hidden">{theme === 'dark' ? 'Light' : 'Dark'}</span>
     </button>
   );
 }

@@ -4,6 +4,7 @@ import { Card } from '@/common/components/ui/card';
 import { EmptyState } from '@/common/components/feedback/empty-state';
 import { LoadingState } from '@/common/components/feedback/loading-state';
 import { Button } from '@/common/components/ui/button';
+import { TrashIcon } from '@/common/components/ui/action-icons';
 import { ListCard } from '@/common/components/data-display/list-card';
 import { PageHeader } from '@/common/components/page/page-header';
 import { PermissionGate } from '@/common/components/auth/permission-gate';
@@ -25,11 +26,14 @@ export function UserManagementPage() {
   const usersQuery = useUsers();
   const users = usersQuery.data;
   const role = useAuthStore((state) => state.user?.role);
+  const currentUser = useAuthStore((state) => state.user);
+  const bootstrapSession = useAuthStore((state) => state.bootstrapSession);
   const { showToast } = useToast();
   const { confirm } = useConfirm();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [draftFullName, setDraftFullName] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
   const [draftRole, setDraftRole] = useState<User['role']>('FRONTLINE');
   const [draftActive, setDraftActive] = useState(true);
@@ -43,6 +47,7 @@ export function UserManagementPage() {
 
   const startEdit = (user: User) => {
     setEditingUserId(user.id_user);
+    setDraftFullName(user.fullName ?? '');
     setDraftEmail(user.email);
     setDraftRole(user.role);
     setDraftActive(user.isActive);
@@ -75,10 +80,11 @@ export function UserManagementPage() {
               return (
                 <Card key={row.email} className="space-y-4">
                   <ListCard
-                    title={row.email}
+                    title={row.fullName !== '-' ? row.fullName : row.email}
                     subtitle={(
                       <>
-                        <p className="mt-3">Role: {row.role}</p>
+                        <p className="mt-3">Email: {row.email}</p>
+                        <p className="mt-1">Role: {row.role}</p>
                         <p className="mt-1">Status: {row.status}</p>
                       </>
                     )}
@@ -89,6 +95,10 @@ export function UserManagementPage() {
                   {user && isEditing ? (
                     <div className="space-y-3 rounded-[18px] border border-[color:var(--line)] bg-[color:var(--panel-light)] p-4">
                       <div className="grid gap-3 md:grid-cols-2">
+                        <div className="md:col-span-2">
+                          <p className="mb-2 text-xs uppercase tracking-[0.18em] theme-muted">Nama Lengkap</p>
+                          <Input value={draftFullName} onChange={(event) => setDraftFullName(event.target.value)} placeholder="Nama pegawai" />
+                        </div>
                         <div className="md:col-span-2">
                           <p className="mb-2 text-xs uppercase tracking-[0.18em] theme-muted">Email</p>
                           <Input value={draftEmail} onChange={(event) => setDraftEmail(event.target.value)} placeholder="nama@service.com" />
@@ -121,15 +131,19 @@ export function UserManagementPage() {
                               return;
                             }
                             try {
-                              await updateUserMutation.mutateAsync({
+                              const updatedUser = await updateUserMutation.mutateAsync({
                                 id: user.id_user,
                                 payload: {
+                                  fullName: draftFullName.trim(),
                                   email: trimmedEmail,
                                   role: draftRole,
                                   isActive: draftActive,
                                   password: draftPassword.trim() ? draftPassword : undefined,
                                 },
                               });
+                              if (currentUser?.id_user === updatedUser.id_user) {
+                                await bootstrapSession();
+                              }
                               showToast({ title: 'User diperbarui', description: 'Perubahan data pegawai berhasil disimpan.', tone: 'success' });
                               setEditingUserId(null);
                             } catch (error) {
@@ -168,7 +182,7 @@ export function UserManagementPage() {
                           }
                         }}
                       >
-                        {deleteUserMutation.isPending ? 'Memproses...' : 'Hapus'}
+                        <><TrashIcon className="mr-2 h-4 w-4" />{deleteUserMutation.isPending ? 'Memproses...' : 'Hapus'}</>
                       </Button>
                     ) : null}
                   </div>

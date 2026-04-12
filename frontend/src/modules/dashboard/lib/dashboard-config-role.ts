@@ -9,6 +9,7 @@ function makeBaseConfig(role: Role, eyebrow: string, heading: string): Dashboard
     heroImage: '/assets/img11.jpeg',
     focusCards: [],
     monitoringCards: [],
+    quickActions: [],
     kpis: [],
     statusCounts: { ANTRIAN: 0, DIKERJAKAN: 0, TEST_DRIVE: 0, SELESAI: 0, DIAMBIL: 0, TERKENDALA: 0 },
     timeline: [],

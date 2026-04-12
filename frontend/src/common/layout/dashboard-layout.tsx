@@ -1,16 +1,18 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { appRoutes } from '@/config/route.config';
 import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { Button } from '@/common/components/ui/button';
-import { NotificationPermissionBanner } from '@/common/components/notifications/notification-permission-banner';
 import { ThemeToggle } from '@/common/components/ui/theme-toggle';
 import { Card } from '@/common/components/ui/card';
 import { Input } from '@/common/components/ui/input';
+import { SearchIcon } from '@/common/components/ui/action-icons';
 import { hasPermission, roleLabels } from '@/common/lib/authz';
 import { ThemeLogo } from '@/common/components/ui/theme-logo';
 import { RouteTransitionOutlet } from '@/common/components/navigation/route-transition-outlet';
-import { useBroadcastUnreadCount, useNotificationUnreadCount } from '@/modules/notifications/hooks/use-notifications';
+import { useBroadcastUnreadCount, useNotificationUnreadCount, useNotifications } from '@/modules/notifications/hooks/use-notifications';
+import { requestBrowserNotificationPermission, useBrowserNotifications } from '@/common/lib/browser-notifications';
+import { getPreferredDisplayName } from '@/common/lib/display-name';
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -19,10 +21,15 @@ export function DashboardLayout() {
   const clearSession = useAuthStore((state) => state.clearSession);
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const unreadCountQuery = useNotificationUnreadCount();
-  const unreadBroadcastQuery = useBroadcastUnreadCount();
-  const unreadNotificationCount = unreadCountQuery.data ?? 0;
-  const unreadBroadcastCount = unreadBroadcastQuery.data ?? 0;
+
+  const latestNotificationsQuery = useNotifications({ sort: 'newest' });
+  const unreadNotificationsQuery = useNotificationUnreadCount();
+  const unreadBroadcastsQuery = useBroadcastUnreadCount();
+  useBrowserNotifications(latestNotificationsQuery.data);
+
+  const unreadNotificationCount = unreadNotificationsQuery.data ?? 0;
+  const unreadBroadcastCount = unreadBroadcastsQuery.data ?? 0;
+  const displayName = getPreferredDisplayName(user);
 
   const submitGlobalSearch = (event: FormEvent) => {
     event.preventDefault();
@@ -58,7 +65,8 @@ export function DashboardLayout() {
 
       <Card className="mt-4 p-3.5 xl:p-4">
         <p className="text-[11px] uppercase tracking-[0.28em] theme-muted">Akun</p>
-        <p className="mt-2 break-all text-base font-semibold theme-text xl:text-lg">{user?.email}</p>
+        <p className="mt-2 text-base font-semibold theme-text xl:text-lg">{displayName}</p>
+        <p className="mt-1 break-all text-sm theme-muted">{user?.email}</p>
         <p className="mt-1 text-sm text-gradient-accent">{roleLabels[user?.role ?? 'ADMIN']}</p>
       </Card>
 
@@ -139,58 +147,53 @@ export function DashboardLayout() {
 
           <div className="min-w-0 flex-1 lg:ml-[320px] xl:ml-[336px]">
             <header className="sticky top-0 z-30 px-4 py-4 md:px-6 xl:px-8">
-              <div className="topbar-surface glass-soft mx-auto flex max-w-full items-center justify-between gap-3 rounded-[26px] border px-4 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.14)] md:px-5">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--line)] bg-[color:var(--panel-light)] text-xl theme-text lg:hidden"
-                    onClick={() => setOpen(true)}
-                    aria-label="Buka navigasi"
-                  >
-                    ☰
-                  </button>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.24em] theme-muted">JAECOO Yogyakarta</p>
-                    <h1 className="text-sm font-medium theme-text md:text-base">{currentRoute?.label ?? 'Dashboard'}</h1>
+              <div className="topbar-surface glass-soft mx-auto max-w-full rounded-[26px] border px-3 py-3 shadow-[0_18px_40px_rgba(0,0,0,0.14)] sm:px-4 md:px-5">
+                <div className="flex flex-nowrap items-center gap-2 md:gap-3">
+                  <div className="flex min-w-0 items-center gap-2 md:gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--line)] bg-[color:var(--panel-light)] text-xl theme-text lg:hidden"
+                      onClick={() => setOpen(true)}
+                      aria-label="Buka navigasi"
+                    >
+                      ☰
+                    </button>
+                    <div className="min-w-0 max-w-[140px] sm:max-w-[190px] md:max-w-[220px]">
+                      <p className="truncate text-[11px] uppercase tracking-[0.22em] theme-muted max-sm:hidden">JAECOO Yogyakarta</p>
+                      <h1 className="truncate text-sm font-medium theme-text md:text-base">{currentRoute?.label ?? 'Dashboard'}</h1>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 md:gap-3">
-                  <form onSubmit={submitGlobalSearch} className="hidden md:block md:min-w-[280px]">
-                    <Input value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Cari WO, nama, plat, HP, model..." />
+                  <form onSubmit={submitGlobalSearch} className="ml-auto flex min-w-0 flex-1 items-center gap-2 md:max-w-[440px]">
+                    <Input value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Cari WO, nama, plat, HP, model..." className="min-w-0" />
+                    <Button type="submit" variant="secondary" className="action-icon-button shrink-0" aria-label="Telusuri">
+                      <SearchIcon className="h-4 w-4" />
+                    </Button>
                   </form>
-                  <Button variant="secondary" className="hidden md:inline-flex" onClick={() => navigate('/services')}>Board</Button>
+
+                  <Button variant="secondary" className="shrink-0 px-3 max-sm:text-[13px]" onClick={() => navigate('/services')}>Board</Button>
                   <Button
                     variant="secondary"
-                    className="relative hidden md:inline-flex"
-                    onClick={() => navigate('/notifications')}
+                    className="relative shrink-0 px-3 max-sm:text-[13px]"
+                    onClick={async () => {
+                      await requestBrowserNotificationPermission();
+                      navigate('/notifications');
+                    }}
                   >
-                    Notifikasi
+                    <span className="max-sm:hidden">Notifikasi</span>
+                    <span className="sm:hidden">Notif</span>
                     {unreadNotificationCount ? (
-                      <span className="ml-2 inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      <span className="ml-2 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                         {unreadNotificationCount}
                       </span>
                     ) : null}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    className="relative hidden md:inline-flex"
-                    onClick={() => navigate('/broadcasts')}
-                  >
-                    Broadcast
-                    {unreadBroadcastCount ? (
-                      <span className="ml-2 inline-flex min-w-[22px] items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-semibold text-white">
-                        {unreadBroadcastCount}
-                      </span>
-                    ) : null}
-                  </Button>
-                  <ThemeToggle className="shrink-0" />
+                  <ThemeToggle className="shrink-0 max-sm:px-2.5" />
                 </div>
               </div>
             </header>
 
             <main className="page-shell">
-              <NotificationPermissionBanner />
               <RouteTransitionOutlet routeKey={location.pathname} />
             </main>
           </div>

@@ -3,9 +3,6 @@ export const endpoints = {
     login: '/auth/login',
     me: '/auth/me',
   },
-  events: {
-    stream: '/events/stream',
-  },
   customers: {
     list: '/customers',
     create: '/customers',
@@ -45,20 +42,27 @@ export const endpoints = {
     unreadCount: '/notifications/unread-count',
     read: (id: string | number) => `/notifications/${id}/read`,
     readAll: '/notifications/read-all',
+    delete: (id: string | number) => `/notifications/${id}`,
     clearAll: '/notifications',
     pushPublicKey: '/notifications/push/public-key',
     pushSubscribe: '/notifications/push/subscribe',
   },
+
   broadcasts: {
     list: '/broadcasts',
-    create: '/broadcasts',
     unreadCount: '/broadcasts/unread-count',
+    create: '/broadcasts',
     read: (id: string | number) => `/broadcasts/${id}/read`,
     readAll: '/broadcasts/read-all',
+    delete: (id: string | number) => `/broadcasts/${id}`,
     clearAll: '/broadcasts',
+  },
+  events: {
+    stream: '/events/stream',
   },
   auditLogs: {
     list: '/audit-logs',
+    delete: (id: string | number) => `/audit-logs/${id}`,
     clearAll: '/audit-logs',
   },
 } as const;

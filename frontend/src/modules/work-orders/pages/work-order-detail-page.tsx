@@ -8,12 +8,14 @@ import { InfoPanel } from '@/common/components/data-display/info-panel';
 import { PropertyList } from '@/common/components/data-display/property-list';
 import { StatusBadge } from '@/common/components/data-display/status-badge';
 import { Button } from '@/common/components/ui/button';
+import { TrashIcon } from '@/common/components/ui/action-icons';
 import { useToast } from '@/common/components/feedback/toast-provider';
 import { useDeleteWorkOrder, useWorkOrderDetail } from '@/modules/work-orders/hooks/use-work-orders';
 import { getErrorMessage } from '@/common/lib/request-error';
 import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { hasPermission } from '@/common/lib/authz';
 import { formatWorkOrderCode } from '@/common/lib/work-order-code';
+import { VehicleHeroCard } from '@/common/components/vehicle/vehicle-hero-card';
 
 export function WorkOrderDetailPage() {
   const { workOrderId = '' } = useParams();
@@ -70,7 +72,7 @@ export function WorkOrderDetailPage() {
                   }
                 }}
               >
-                {deleteWorkOrderMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                <><TrashIcon className="mr-2 h-4 w-4" />{deleteWorkOrderMutation.isPending ? 'Menghapus...' : 'Hapus'}</>
               </Button>
             ) : null}
           </>
@@ -96,13 +98,20 @@ export function WorkOrderDetailPage() {
             ]} />
           </InfoPanel>
           <InfoPanel title="Kendaraan">
-            <PropertyList items={[
-              { label: 'Plat nomor', value: linkedVehicle?.plat_nomor ?? '-' },
-              { label: 'No rangka', value: workOrder.no_rangka ?? linkedVehicle?.no_rangka ?? '-' },
-              { label: 'Model', value: linkedVehicle?.jenis_mobil ?? '-' },
-              { label: 'Warna', value: linkedVehicle?.warna ?? '-' },
-              { label: 'Kilometer', value: linkedVehicle?.kilometer ? `${linkedVehicle.kilometer.toLocaleString('id-ID')} km` : '-' },
-            ]} />
+            <div className="space-y-4">
+              <VehicleHeroCard
+                model={linkedVehicle?.jenis_mobil}
+                plate={linkedVehicle?.plat_nomor}
+                vin={workOrder.no_rangka ?? linkedVehicle?.no_rangka}
+              />
+              <PropertyList items={[
+                { label: 'Plat nomor', value: linkedVehicle?.plat_nomor ?? '-' },
+                { label: 'No rangka', value: workOrder.no_rangka ?? linkedVehicle?.no_rangka ?? '-' },
+                { label: 'Model', value: linkedVehicle?.jenis_mobil ?? '-' },
+                { label: 'Warna', value: linkedVehicle?.warna ?? '-' },
+                { label: 'Kilometer', value: linkedVehicle?.kilometer ? `${linkedVehicle.kilometer.toLocaleString('id-ID')} km` : '-' },
+              ]} />
+            </div>
           </InfoPanel>
         </Card>
 

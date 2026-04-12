@@ -16,8 +16,7 @@
     "db:seed": "prisma db seed",
     "postinstall": "node scripts/prisma-bootstrap.cjs",
     "prebuild": "node scripts/prisma-bootstrap.cjs",
-    "dev:check": "npx prisma generate && npm run build",
-    "push:keys": "node scripts/generate-web-push-keys.mjs"
+    "dev:check": "npx prisma generate && npm run build"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -32,8 +31,7 @@
     "path-to-regexp": "8.4.0",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "web-push": "^3.6.7"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

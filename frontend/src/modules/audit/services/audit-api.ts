@@ -1,4 +1,5 @@
 import { unwrapApiCollection } from '@/common/lib/api-response';
+import { filterDismissedItems, clearDismissedItems } from '@/common/lib/dismissed-items';
 import type { Role } from '@/common/types/domain';
 import { apiClient } from '@/services/api-client';
 import { endpoints } from '@/services/endpoints';
@@ -48,9 +49,10 @@ export async function getActivityLogs(filters: ActivityLogFilters = {}): Promise
     },
   });
 
-  return unwrapApiCollection(data).map((item) => mapActivityLogFromBackend(item as Record<string, unknown>));
+  return filterDismissedItems('activity-logs', unwrapApiCollection(data).map((item) => mapActivityLogFromBackend(item as Record<string, unknown>)));
 }
 
 export async function clearActivityLogs() {
   await apiClient.delete(endpoints.auditLogs.clearAll);
+  clearDismissedItems('activity-logs');
 }

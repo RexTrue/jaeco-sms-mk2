@@ -9,6 +9,7 @@ import { LoadingState } from '@/common/components/feedback/loading-state';
 import { useToast } from '@/common/components/feedback/toast-provider';
 import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider';
 import { Button } from '@/common/components/ui/button';
+import { TrashIcon } from '@/common/components/ui/action-icons';
 import { Select } from '@/common/components/ui/select';
 import { Textarea } from '@/common/components/ui/textarea';
 import { StatusBadge } from '@/common/components/data-display/status-badge';
@@ -22,6 +23,7 @@ import { ServiceTimeline } from '@/modules/services/components/service-timeline'
 import { useCreateMechanicNote, useDeleteService, useServiceDetail, useUpdateService, useUpdateServiceStatus } from '@/modules/services/hooks/use-services';
 import { useWorkOrders } from '@/modules/work-orders/hooks/use-work-orders';
 import { formatWorkOrderCode } from '@/common/lib/work-order-code';
+import { VehicleHeroCard } from '@/common/components/vehicle/vehicle-hero-card';
 import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { hasPermission } from '@/common/lib/authz';
 import { getErrorMessage } from '@/common/lib/request-error';
@@ -145,7 +147,7 @@ export function ServiceDetailPage() {
                     }}
                     disabled={deleteServiceMutation.isPending}
                   >
-                    {deleteServiceMutation.isPending ? 'Menghapus...' : 'Hapus'}
+                    <><TrashIcon className="mr-2 h-4 w-4" />{deleteServiceMutation.isPending ? 'Menghapus...' : 'Hapus'}</>
                   </Button>
                 ) : null}
               </>
@@ -154,12 +156,19 @@ export function ServiceDetailPage() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <InfoPanel title="Kendaraan">
-              <PropertyList items={[
-                { label: 'Plat', value: linkedVehicle?.plat_nomor ?? '-' },
-                { label: 'No rangka', value: linkedWorkOrder?.no_rangka ?? linkedVehicle?.no_rangka ?? '-' },
-                { label: 'Model', value: linkedVehicle?.jenis_mobil ?? '-' },
-                { label: 'Kilometer', value: linkedVehicle?.kilometer ? `${linkedVehicle.kilometer.toLocaleString('id-ID')} km` : '-' },
-              ]} />
+              <div className="space-y-4">
+                <VehicleHeroCard
+                  model={linkedVehicle?.jenis_mobil}
+                  plate={linkedVehicle?.plat_nomor}
+                  vin={linkedWorkOrder?.no_rangka ?? linkedVehicle?.no_rangka}
+                />
+                <PropertyList items={[
+                  { label: 'Plat', value: linkedVehicle?.plat_nomor ?? '-' },
+                  { label: 'No rangka', value: linkedWorkOrder?.no_rangka ?? linkedVehicle?.no_rangka ?? '-' },
+                  { label: 'Model', value: linkedVehicle?.jenis_mobil ?? '-' },
+                  { label: 'Kilometer', value: linkedVehicle?.kilometer ? `${linkedVehicle.kilometer.toLocaleString('id-ID')} km` : '-' },
+                ]} />
+              </div>
             </InfoPanel>
             <InfoPanel title="Pelanggan">
               <PropertyList items={[

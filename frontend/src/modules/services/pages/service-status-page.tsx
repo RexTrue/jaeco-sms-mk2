@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { EmptyState } from '@/common/components/feedback/empty-state';
 import { LoadingState } from '@/common/components/feedback/loading-state';
@@ -8,6 +8,7 @@ import { Select } from '@/common/components/ui/select';
 import { PageHeader } from '@/common/components/page/page-header';
 import { StatusBadge } from '@/common/components/data-display/status-badge';
 import { Button } from '@/common/components/ui/button';
+import { SearchIcon } from '@/common/components/ui/action-icons';
 import { serviceStatusLabelMap, serviceStatusPanelMap } from '@/common/lib/status-appearance';
 import { useServices } from '@/modules/services/hooks/use-services';
 import { useWorkOrders } from '@/modules/work-orders/hooks/use-work-orders';
@@ -33,7 +34,12 @@ export function ServiceStatusPage() {
 
   const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const search = searchParams.get('search') ?? '';
+  const [searchDraft, setSearchDraft] = useState(search);
   const sortBy = searchParams.get('sort') === 'oldest' ? 'oldest' : 'newest';
+
+  useEffect(() => {
+    setSearchDraft(search);
+  }, [search]);
 
   const services = useMemo(() => servicesQuery.data ?? [], [servicesQuery.data]);
   const workOrders = useMemo(() => workOrdersQuery.data ?? [], [workOrdersQuery.data]);
@@ -77,12 +83,22 @@ export function ServiceStatusPage() {
     setSearchParams(next, { replace: true });
   };
 
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    updateParams({ search: searchDraft.trim() || null });
+  };
+
   return (
     <div className="space-y-5">
       <PageHeader eyebrow="Servis" title={serviceStatusLabelMap[currentStatus]} actions={<Link to="/services"><Button variant="secondary" type="button">Kembali ke Board</Button></Link>} />
 
       <div className="grid gap-3 lg:grid-cols-[1fr_180px]">
-        <Input value={search} onChange={(event) => updateParams({ search: event.target.value || null })} placeholder="Cari WO, nama pemilik, plat, HP, model, status..." />
+        <form onSubmit={submitSearch} className="flex items-center gap-2">
+          <Input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)} placeholder="Cari WO, nama pemilik, plat, HP, model, status..." />
+          <Button type="submit" variant="secondary" className="action-icon-button search-icon-button shrink-0" aria-label="Telusuri status servis" title="Telusuri status servis">
+            <SearchIcon className="h-4 w-4" />
+          </Button>
+        </form>
         <Select value={sortBy} onChange={(event) => updateParams({ sort: event.target.value })}>
           <option value="newest">Terbaru</option>
           <option value="oldest">Terlama</option>

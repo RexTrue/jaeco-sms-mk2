@@ -1,15 +1,10 @@
-import { BadRequestException, Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { BadRequestException, Controller, Delete, Get, Headers, Param, Patch, Query } from '@nestjs/common';
 import { parseToken } from '../common/auth';
 import { NotificationsService } from './notifications.service';
-import { PushService } from './push.service';
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-    private readonly pushService: PushService,
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
   async list(
@@ -36,10 +31,6 @@ export class NotificationsController {
       createdAt: item.notification.createdAt,
       isRead: item.isRead,
       readAt: item.readAt,
-      isSeen: item.isSeen,
-      seenAt: item.seenAt,
-      roleSnapshot: item.roleSnapshot,
-      category: 'system',
     }));
   }
 
@@ -73,49 +64,5 @@ export class NotificationsController {
     const actor = parseToken(authorization);
     const deletedCount = await this.notificationsService.clearAll(actor.id_user, 'system');
     return { success: true, deletedCount };
-  }
-
-  @Get('push/public-key')
-  getPushPublicKey() {
-    return this.pushService.getPublicConfig();
-  }
-
-  @Post('push/subscribe')
-  async subscribePush(
-    @Body() body: { endpoint: string; keys?: { p256dh?: string; auth?: string } },
-    @Headers('authorization') authorization?: string,
-    @Req() req?: Request,
-  ) {
-    const actor = parseToken(authorization);
-    if (!body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
-      throw new BadRequestException('Subscription push tidak valid.');
-    }
-
-    await this.pushService.upsertSubscription(
-      actor.id_user,
-      {
-        endpoint: body.endpoint,
-        keys: {
-          p256dh: body.keys.p256dh,
-          auth: body.keys.auth,
-        },
-      },
-      req?.headers['user-agent'] ?? null,
-    );
-
-    return { success: true };
-  }
-
-  @Delete('push/subscribe')
-  async unsubscribePush(
-    @Body() body: { endpoint: string },
-    @Headers('authorization') authorization?: string,
-  ) {
-    const actor = parseToken(authorization);
-    if (!body.endpoint) {
-      throw new BadRequestException('Endpoint subscription wajib dikirim.');
-    }
-    await this.pushService.removeSubscription(actor.id_user, body.endpoint);
-    return { success: true };
   }
 }

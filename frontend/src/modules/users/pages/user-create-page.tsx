@@ -19,6 +19,7 @@ import { getErrorMessage } from '@/common/lib/request-error';
 import type { CreateUserPayload } from '@/modules/users/types/user.types';
 
 const schema = z.object({
+  fullName: z.string().min(2, 'Nama lengkap minimal 2 karakter'),
   email: z.string().email('Email tidak valid'),
   password: z.string().min(8, 'Password minimal 8 karakter'),
   role: z.enum(['MEKANIK', 'FRONTLINE', 'MANAGER', 'ADMIN']),
@@ -36,13 +37,14 @@ export function UserCreatePage() {
   const { confirm } = useConfirm();
   const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '', role: 'FRONTLINE', isActive: 'true' },
+    defaultValues: { fullName: '', email: '', password: '', role: 'FRONTLINE', isActive: 'true' },
   });
 
   useUnsavedChanges({ when: isDirty });
 
   const onSubmit = handleSubmit(async (values) => {
     const payload: CreateUserPayload = {
+      fullName: values.fullName.trim(),
       email: values.email,
       password: values.password,
       role: values.role,
@@ -69,6 +71,11 @@ export function UserCreatePage() {
         <FormShell eyebrow="Form" title="Input Pegawai Baru">
           <FormDirtyBanner visible={isDirty} />
           <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+            <div className="md:col-span-2">
+              <FieldLabel htmlFor="fullName">Nama Lengkap</FieldLabel>
+              <Input id="fullName" placeholder="Nama pegawai" {...register('fullName')} />
+              <FieldError>{errors.fullName?.message}</FieldError>
+            </div>
             <div className="md:col-span-2">
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input id="email" placeholder="nama@service.com" {...register('email')} />

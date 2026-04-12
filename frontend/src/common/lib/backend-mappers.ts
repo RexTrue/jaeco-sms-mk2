@@ -43,6 +43,7 @@ function coerceWashRequestStatus(value: unknown): WashRequestStatus {
 export function mapUserFromBackend(input: Record<string, unknown>): User {
   return {
     id_user: Number(input.id_user ?? 0),
+    fullName: input.fullName == null ? null : String(input.fullName),
     email: String(input.email ?? ''),
     role: coerceRole(input.role),
     isActive: Boolean(input.isActive ?? true),

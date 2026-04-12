@@ -1,4 +1,4 @@
-import { PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/common/theme/theme-provider';
 import { ToastProvider } from '@/common/components/feedback/toast-provider';
@@ -9,9 +9,9 @@ import { RealtimeBootstrap } from '@/app/providers/realtime-bootstrap';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 15_000,
+      staleTime: 60_000,
       retry: 1,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false,
     },
     mutations: {
       retry: 0,

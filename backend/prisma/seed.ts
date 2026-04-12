@@ -9,23 +9,23 @@ const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-async function upsertUser(email: string, password: string, role: Role) {
+async function upsertUser(fullName: string, email: string, password: string, role: Role) {
   const rounds = Number(process.env.BCRYPT_ROUNDS ?? 12);
   const passwordHash = hashSync(password, rounds);
   const normalizedEmail = email.trim().toLowerCase();
 
   await prisma.user.upsert({
     where: { email: normalizedEmail },
-    update: { password: passwordHash, role, isActive: true },
-    create: { email: normalizedEmail, password: passwordHash, role, isActive: true },
+    update: { fullName, password: passwordHash, role, isActive: true },
+    create: { fullName, email: normalizedEmail, password: passwordHash, role, isActive: true },
   });
 }
 
 async function main() {
-  await upsertUser('admin@service.com', 'Admin123!', 'ADMIN');
-  await upsertUser('frontline@service.com', 'Frontline123!', 'FRONTLINE');
-  await upsertUser('manager@service.com', 'Manager123!', 'MANAGER');
-  await upsertUser('mechanic@service.com', 'Mechanic123!', 'MEKANIK');
+  await upsertUser('Admin Service', 'admin@service.com', 'Admin123!', 'ADMIN');
+  await upsertUser('Frontline Service', 'frontline@service.com', 'Frontline123!', 'FRONTLINE');
+  await upsertUser('Manager Service', 'manager@service.com', 'Manager123!', 'MANAGER');
+  await upsertUser('Mekanik Service', 'mechanic@service.com', 'Mechanic123!', 'MEKANIK');
 }
 
 main()

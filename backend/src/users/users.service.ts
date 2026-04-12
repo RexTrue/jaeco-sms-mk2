@@ -8,27 +8,44 @@ import { hashSync } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 
+function inferNameFromEmail(email: string) {
+  const local = email.split('@')[0] ?? '';
+  const normalized = local.replace(/[._-]+/g, ' ').trim();
+  if (!normalized) return null;
+  return normalized
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function withDisplayName<T extends { fullName: string | null; email: string }>(user: T): T {
+  return { ...user, fullName: user.fullName?.trim() || inferNameFromEmail(user.email) } as T;
+}
+
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  list() {
-    return this.prisma.user.findMany({
+  async list() {
+    const users = await this.prisma.user.findMany({
       orderBy: { id_user: 'asc' },
-      select: { id_user: true, email: true, role: true, isActive: true },
+      select: { id_user: true, fullName: true, email: true, role: true, isActive: true },
     });
+    return users.map((item) => withDisplayName(item));
   }
 
   async detail(id: number) {
     const user = await this.prisma.user.findUnique({
       where: { id_user: id },
-      select: { id_user: true, email: true, role: true, isActive: true },
+      select: { id_user: true, fullName: true, email: true, role: true, isActive: true },
     });
     if (!user) throw new NotFoundException('User tidak ditemukan');
-    return user;
+    return withDisplayName(user);
   }
 
   async create(body: {
+    fullName?: string;
     email: string;
     password: string;
     role: Role;
@@ -36,6 +53,7 @@ export class UsersService {
   }) {
     const email = body.email.trim().toLowerCase();
     const password = body.password.trim();
+    const fullName = body.fullName?.trim() || null;
 
     if (password.length < 8) {
       throw new BadRequestException('Password minimal 8 karakter.');
@@ -45,15 +63,17 @@ export class UsersService {
     const passwordHash = hashSync(password, rounds);
 
     try {
-      return await this.prisma.user.create({
+      const created = await this.prisma.user.create({
         data: {
+          fullName,
           email,
           password: passwordHash,
           role: body.role,
           isActive: body.isActive ?? true,
         },
-        select: { id_user: true, email: true, role: true, isActive: true },
+        select: { id_user: true, fullName: true, email: true, role: true, isActive: true },
       });
+      return withDisplayName(created);
     } catch (error) {
       const err = error as { code?: string };
       if (err.code === 'P2002') {
@@ -63,12 +83,14 @@ export class UsersService {
     }
   }
 
-  async update(id: number, body: { email?: string; role?: Role; isActive?: boolean; password?: string }) {
+  async update(id: number, body: { fullName?: string; email?: string; role?: Role; isActive?: boolean; password?: string }) {
     const user = await this.prisma.user.findUnique({ where: { id_user: id } });
     if (!user) throw new NotFoundException('User tidak ditemukan');
 
-    const data: { email?: string; role?: Role; isActive?: boolean; password?: string } = {};
+    const data: { fullName?: string | null; email?: string; role?: Role; isActive?: boolean; password?: string } = {};
 
+
+    if (body.fullName !== undefined) data.fullName = body.fullName.trim() || null;
 
     if (body.email !== undefined) {
       const email = body.email.trim().toLowerCase();
@@ -96,11 +118,12 @@ export class UsersService {
       data.password = hashSync(password, rounds);
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id_user: id },
       data,
-      select: { id_user: true, email: true, role: true, isActive: true },
+      select: { id_user: true, fullName: true, email: true, role: true, isActive: true },
     });
+    return withDisplayName(updated);
   }
 
   async delete(id: number) {
@@ -126,10 +149,11 @@ export class UsersService {
     }
 
     // Soft delete by setting isActive to false instead of hard delete
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id_user: id },
       data: { isActive: false },
-      select: { id_user: true, email: true, role: true, isActive: true },
+      select: { id_user: true, fullName: true, email: true, role: true, isActive: true },
     });
+    return withDisplayName(updated);
   }
 }

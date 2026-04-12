@@ -16,6 +16,7 @@ import { ServicesService } from './services.service';
 import { parseToken } from '../common/auth';
 import { AuditService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { buildMechanicNoteMessage, buildServiceCreatedMessage, buildServiceStatusMessage, buildServiceUpdatedMessage, buildWashStatusMessage } from '../notifications/notification-message.util';
 
 const MAX_INT32 = 2_147_483_647;
 
@@ -63,10 +64,16 @@ export class ServicesController {
     const actor = parseToken(authorization);
     try {
       const created = await this.servicesService.create(body);
+      const createdMessage = buildServiceCreatedMessage({
+        nomorWo: created.workOrder?.nomor_wo_pusat ?? created.id_wo,
+        plateNumber: created.workOrder?.kendaraan?.plat_nomor,
+        carType: created.workOrder?.kendaraan?.jenis_mobil,
+      });
+
       await this.notificationsService.create({
         type: 'SERVICE_CREATED',
-        title: 'Servis baru masuk',
-        message: `Servis untuk work order ${created.workOrder?.nomor_wo_pusat ?? created.id_wo} telah dibuat.`,
+        title: createdMessage.title,
+        message: createdMessage.message,
         entityType: 'service',
         entityId: created.id_servis,
         targetPath: `/services/${created.id_servis}`,
@@ -123,10 +130,21 @@ export class ServicesController {
 
     try {
       const updated = await this.servicesService.update(serviceId, body);
+      const context = {
+        nomorWo: updated.workOrder?.nomor_wo_pusat ?? serviceId,
+        plateNumber: updated.workOrder?.kendaraan?.plat_nomor,
+        carType: updated.workOrder?.kendaraan?.jenis_mobil,
+      };
+      const serviceMessage = body.status && body.status !== before.status
+        ? buildServiceStatusMessage(context, before.status, body.status)
+        : body.statusCuciMobil && body.statusCuciMobil !== before.statusCuciMobil
+          ? buildWashStatusMessage(context, before.statusCuciMobil, body.statusCuciMobil)
+          : buildServiceUpdatedMessage(context);
+
       await this.notificationsService.create({
         type: 'SERVICE_UPDATED',
-        title: 'Servis diperbarui',
-        message: `Servis ${updated.workOrder?.nomor_wo_pusat ?? serviceId} telah diperbarui.`,
+        title: serviceMessage.title,
+        message: serviceMessage.message,
         entityType: 'service',
         entityId: serviceId,
         targetPath: `/services/${serviceId}`,
@@ -190,11 +208,19 @@ export class ServicesController {
 
     try {
       const updated = await this.servicesService.updateStatus(serviceId, body);
-      const statusTitleMap: Record<StatusServis, string> = { ANTRIAN: 'Unit masuk antrian', DIKERJAKAN: 'Proses servis dimulai', TEST_DRIVE: 'Mobil siap test drive', SELESAI: 'Servis selesai', DIAMBIL: 'Mobil siap diambil', TERKENDALA: 'Servis terkendala' };
+      const statusMessage = buildServiceStatusMessage(
+        {
+          nomorWo: updated.workOrder?.nomor_wo_pusat ?? serviceId,
+          plateNumber: updated.workOrder?.kendaraan?.plat_nomor,
+          carType: updated.workOrder?.kendaraan?.jenis_mobil,
+        },
+        before.status,
+        updated.status,
+      );
       await this.notificationsService.create({
         type: 'SERVICE_STATUS_UPDATED',
-        title: statusTitleMap[updated.status],
-        message: `Status servis ${updated.workOrder?.nomor_wo_pusat ?? serviceId} berubah menjadi ${updated.status}.`,
+        title: statusMessage.title,
+        message: statusMessage.message,
         entityType: 'service',
         entityId: serviceId,
         targetPath: `/services/${serviceId}`,
@@ -247,6 +273,20 @@ export class ServicesController {
 
     try {
       const result = await this.servicesService.addNote(serviceId, body);
+      const noteMessage = buildMechanicNoteMessage({
+        nomorWo: service.workOrder?.nomor_wo_pusat ?? serviceId,
+        plateNumber: service.workOrder?.kendaraan?.plat_nomor,
+        carType: service.workOrder?.kendaraan?.jenis_mobil,
+      });
+      await this.notificationsService.create({
+        type: 'SERVICE_NOTE_ADDED',
+        title: noteMessage.title,
+        message: noteMessage.message,
+        entityType: 'service',
+        entityId: serviceId,
+        targetPath: `/services/${serviceId}`,
+        actorUserId: actor.id_user,
+      });
       await this.auditService.log({
         actor,
         action: 'SERVICE_NOTE_ADDED',
