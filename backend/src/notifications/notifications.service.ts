@@ -45,13 +45,12 @@ export class NotificationsService {
       : { not: { startsWith: 'BROADCAST_' } };
   }
 
-  private async resolveRecipients(targetRoles: Role[], actorUserId?: number | null) {
+  private async resolveRecipients(targetRoles: Role[]) {
     const uniqueRoles = Array.from(new Set(targetRoles));
     const users = await this.prisma.user.findMany({
       where: {
         role: { in: uniqueRoles },
         isActive: true,
-        ...(actorUserId ? { id_user: { not: actorUserId } } : {}),
       },
       select: { id_user: true, role: true },
     });
@@ -64,7 +63,7 @@ export class NotificationsService {
 
   async create(input: CreateNotificationInput): Promise<Notification | null> {
     const targetRoles = input.roles?.length ? Array.from(new Set(input.roles)) : allRoles;
-    const recipients = await this.resolveRecipients(targetRoles, input.actorUserId);
+    const recipients = await this.resolveRecipients(targetRoles);
 
     if (!recipients.length) {
       return null;
@@ -104,8 +103,8 @@ export class NotificationsService {
   }
 
   async broadcast(input: BroadcastInput) {
-    const targetRoles = Array.from(new Set(input.targetRoles.filter((role) => role !== input.actorRole)));
-    const recipients = await this.resolveRecipients(targetRoles, input.actorUserId);
+    const targetRoles = Array.from(new Set([...input.targetRoles, input.actorRole]));
+    const recipients = await this.resolveRecipients(targetRoles);
 
     if (!recipients.length) {
       return null;
@@ -202,6 +201,39 @@ export class NotificationsService {
       },
       data: { isRead: true, readAt: new Date() },
     });
+  }
+
+
+  async deleteOne(userId: number, notificationId: number, kind: NotificationKind) {
+    const deletedCount = await this.prisma.$transaction(async (tx) => {
+      const deletedRecipients = await tx.notificationRecipient.deleteMany({
+        where: {
+          userId,
+          notificationId,
+          notification: { type: this.buildTypeFilter(kind) },
+        },
+      });
+
+      if (deletedRecipients.count === 0) {
+        return 0;
+      }
+
+      const orphanNotification = await tx.notification.findFirst({
+        where: {
+          id: notificationId,
+          recipients: { none: {} },
+        },
+        select: { id: true },
+      });
+
+      if (orphanNotification) {
+        await tx.notification.delete({ where: { id: orphanNotification.id } });
+      }
+
+      return deletedRecipients.count;
+    });
+
+    return deletedCount;
   }
 
   async clearAll(userId: number, kind: NotificationKind) {

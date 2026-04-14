@@ -9,6 +9,7 @@ import { PageHeader } from '@/common/components/page/page-header';
 import { Input } from '@/common/components/ui/input';
 import { Select } from '@/common/components/ui/select';
 import { SearchIcon, TrashIcon } from '@/common/components/ui/action-icons';
+import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider';
 import { hasPermission } from '@/common/lib/authz';
 import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { useWorkOrders, useDeleteWorkOrder } from '@/modules/work-orders/hooks/use-work-orders';
@@ -36,6 +37,7 @@ export function WorkOrderListPage() {
 
   const deleteWorkOrderMutation = useDeleteWorkOrder();
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
 
   useEffect(() => {
     setSearchDraft(search);
@@ -154,8 +156,14 @@ export function WorkOrderListPage() {
                             variant="danger"
                             type="button"
                             disabled={deleteWorkOrderMutation.isPending}
-                            onClick={() => {
-                              if (!window.confirm('Hapus work order ini dan semua data terkait?')) return;
+                            onClick={async () => {
+                              const approved = await confirm({
+                                title: 'Hapus work order ini?',
+                                description: 'Work order akan dihapus dari sistem. Data terkait yang terhubung juga akan ikut terhapus.',
+                                confirmLabel: 'Hapus',
+                                tone: 'danger',
+                              });
+                              if (!approved) return;
                               deleteWorkOrderMutation.mutate(record.workOrder.id_wo, {
                                 onSuccess: () => {
                                   showToast({ title: 'Work order dihapus', description: 'Work order berhasil dihapus dari database.', tone: 'success' });

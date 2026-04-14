@@ -16,12 +16,14 @@ import { useAuthStore } from '@/modules/auth/store/auth-store';
 import { hasPermission } from '@/common/lib/authz';
 import { formatWorkOrderCode } from '@/common/lib/work-order-code';
 import { VehicleHeroCard } from '@/common/components/vehicle/vehicle-hero-card';
+import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider';
 
 export function WorkOrderDetailPage() {
   const { workOrderId = '' } = useParams();
   const navigate = useNavigate();
   const role = useAuthStore((state) => state.user?.role);
   const { showToast } = useToast();
+  const { confirm } = useConfirm();
   const workOrderQuery = useWorkOrderDetail(workOrderId, { enabled: Boolean(workOrderId) });
   const deleteWorkOrderMutation = useDeleteWorkOrder();
 
@@ -62,7 +64,13 @@ export function WorkOrderDetailPage() {
                 type="button"
                 disabled={deleteWorkOrderMutation.isPending}
                 onClick={async () => {
-                  if (!window.confirm('Hapus work order ini dan semua data terkait?')) return;
+                  const approved = await confirm({
+                    title: 'Hapus work order ini?',
+                    description: 'Work order akan dihapus dari sistem. Data terkait yang terhubung juga akan ikut terhapus.',
+                    confirmLabel: 'Hapus',
+                    tone: 'danger',
+                  });
+                  if (!approved) return;
                   try {
                     await deleteWorkOrderMutation.mutateAsync(workOrder.id_wo);
                     showToast({ title: 'Work order dihapus', description: 'Work order berhasil dihapus dari database.', tone: 'success' });

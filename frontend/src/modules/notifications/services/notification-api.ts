@@ -1,7 +1,6 @@
 import { apiClient } from '@/services/api-client';
 import { endpoints } from '@/services/endpoints';
 import { unwrapApiCollection } from '@/common/lib/api-response';
-import { clearDismissedItems, filterDismissedItems } from '@/common/lib/dismissed-items';
 import type { AppNotification, Role } from '@/common/types/domain';
 import type { NotificationFilter } from '@/modules/notifications/types/notification.types';
 
@@ -13,7 +12,7 @@ export async function getNotifications(filters: NotificationFilter = {}): Promis
       sort: filters.sort ?? 'newest',
     },
   });
-  return filterDismissedItems('notifications', unwrapApiCollection(data) as AppNotification[]);
+  return unwrapApiCollection(data) as AppNotification[];
 }
 
 export async function getNotificationUnreadCount(): Promise<number> {
@@ -29,9 +28,12 @@ export async function markAllNotificationsRead() {
   await apiClient.patch(endpoints.notifications.readAll);
 }
 
+export async function deleteNotification(id: number) {
+  await apiClient.delete(endpoints.notifications.delete(id));
+}
+
 export async function clearNotifications() {
   await apiClient.delete(endpoints.notifications.clearAll);
-  clearDismissedItems('notifications');
 }
 
 export async function getBroadcasts(filters: NotificationFilter = {}): Promise<AppNotification[]> {
@@ -42,7 +44,7 @@ export async function getBroadcasts(filters: NotificationFilter = {}): Promise<A
       sort: filters.sort ?? 'newest',
     },
   });
-  return filterDismissedItems('broadcasts', unwrapApiCollection(data) as AppNotification[]);
+  return unwrapApiCollection(data) as AppNotification[];
 }
 
 export async function getBroadcastUnreadCount(): Promise<number> {
@@ -58,9 +60,12 @@ export async function markAllBroadcastsRead() {
   await apiClient.patch(endpoints.broadcasts.readAll);
 }
 
+export async function deleteBroadcast(id: number) {
+  await apiClient.delete(endpoints.broadcasts.delete(id));
+}
+
 export async function clearBroadcasts() {
   await apiClient.delete(endpoints.broadcasts.clearAll);
-  clearDismissedItems('broadcasts');
 }
 
 export async function sendBroadcast(payload: { title: string; message: string; targetRoles: Role[] }) {

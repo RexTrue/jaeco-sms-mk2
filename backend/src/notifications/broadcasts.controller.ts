@@ -63,6 +63,17 @@ export class BroadcastsController {
     return { success: true };
   }
 
+  @Delete(':id')
+  async deleteOne(@Param('id') id: string, @Headers('authorization') authorization?: string) {
+    const actor = parseToken(authorization);
+    const notificationId = Number(id);
+    if (!Number.isInteger(notificationId) || notificationId <= 0) {
+      throw new BadRequestException('ID broadcast tidak valid');
+    }
+    const deletedCount = await this.notificationsService.deleteOne(actor.id_user, notificationId, 'broadcast');
+    return { success: true, deletedCount };
+  }
+
   @Delete()
   async clearAll(@Headers('authorization') authorization?: string) {
     const actor = parseToken(authorization);
@@ -89,9 +100,8 @@ export class BroadcastsController {
       throw new BadRequestException('Judul dan pesan broadcast wajib diisi.');
     }
 
-    const filteredRoles = targetRoles.filter((role) => role !== actor.role);
-    if (filteredRoles.length === 0) {
-      throw new BadRequestException('Pilih minimal satu role tujuan selain role pengirim.');
+    if (targetRoles.length === 0) {
+      throw new BadRequestException('Pilih minimal satu role tujuan.');
     }
 
     const notification = await this.notificationsService.broadcast({
@@ -99,7 +109,7 @@ export class BroadcastsController {
       message,
       actorUserId: actor.id_user,
       actorRole: actor.role,
-      targetRoles: filteredRoles,
+      targetRoles,
     });
 
     if (!notification) {

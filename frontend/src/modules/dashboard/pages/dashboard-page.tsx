@@ -95,10 +95,10 @@ export function DashboardPage() {
     const activeWorkOrders = workOrderItems.filter((item) => item.status === 'OPEN' || item.status === 'IN_PROGRESS').length;
     const activeUsers = userItems.filter((item) => item.isActive).length;
     nextConfig.quickActions = [
-      { label: 'Work Order', note: 'Kelola work order aktif dan riwayat unit servis.', href: '/work-orders', badgeCount: activeWorkOrders },
-      { label: 'Board Servis', note: 'Pantau perpindahan status unit dari antrian sampai diambil.', href: '/services', badgeCount: serviceItems.length },
-      { label: 'Notifikasi', note: 'Lihat update sistem terbaru yang perlu segera dibaca.', href: '/notifications', badgeCount: notificationUnreadCount },
-      { label: 'Broadcast', note: 'Buka pengumuman dan arahan operasional terbaru.', href: '/broadcasts', badgeCount: broadcastUnreadCount },
+      { label: 'Work Order', note: 'Kelola data work order.', href: '/work-orders', badgeCount: activeWorkOrders },
+      { label: 'Board Servis', note: 'Pantau status unit servis.', href: '/services', badgeCount: serviceItems.length },
+      { label: 'Notifikasi', note: 'Lihat notifikasi terbaru.', href: '/notifications', badgeCount: notificationUnreadCount },
+      { label: 'Broadcast', note: 'Lihat pengumuman operasional.', href: '/broadcasts', badgeCount: broadcastUnreadCount },
     ];
     nextConfig.monitoringCards = buildMonitoringCards(role, activeWorkOrders, activeUsers, statusCounts);
 

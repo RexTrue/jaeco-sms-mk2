@@ -2,6 +2,18 @@ import { z } from 'zod';
 import type { WorkOrder } from '@/common/types/domain';
 import type { CreateWorkOrderPayload } from '@/modules/work-orders/types/work-order.types';
 
+export const WORK_ORDER_STATUS_OPTIONS = ['OPEN', 'IN_PROGRESS', 'CLOSED', 'CANCELLED'] as const;
+export const SERVICE_STATUS_OPTIONS = ['ANTRIAN', 'DIKERJAKAN', 'TEST_DRIVE', 'SELESAI', 'DIAMBIL', 'TERKENDALA'] as const;
+export const PRIORITY_OPTIONS = ['NORMAL', 'HIGH', 'URGENT'] as const;
+export const CAR_WASH_STATUS_OPTIONS = ['TIDAK_PERLU', 'MENUNGGU', 'SELESAI'] as const;
+
+type SelectValue<T extends readonly string[]> = T[number] | '';
+
+const requiredSelect = <T extends readonly [string, ...string[]]>(
+  options: T,
+  message: string,
+) => z.union([z.enum(options), z.literal('')]).refine((value) => value !== '', { message });
+
 export const workOrderSchema = z.object({
   nomorWoPusat: z.string().min(3, 'Nomor work order pusat wajib diisi'),
   waktuMasuk: z.string().min(1, 'Tanggal / waktu input wajib diisi'),
@@ -14,17 +26,37 @@ export const workOrderSchema = z.object({
   warna: z.string().min(2, 'Warna wajib diisi'),
   no_rangka: z.string().min(5, 'Nomor rangka minimal 5 karakter'),
   kilometer: z.coerce.number().int().min(0, 'Kilometer tidak boleh negatif'),
-  status: z.enum(['OPEN', 'IN_PROGRESS', 'CLOSED', 'CANCELLED']),
-  statusServis: z.enum(['ANTRIAN', 'DIKERJAKAN', 'TEST_DRIVE', 'SELESAI', 'DIAMBIL', 'TERKENDALA']),
-  prioritas: z.enum(['NORMAL', 'HIGH', 'URGENT']),
+  status: requiredSelect(WORK_ORDER_STATUS_OPTIONS, 'Pilih status work order'),
+  statusServis: requiredSelect(SERVICE_STATUS_OPTIONS, 'Pilih status servis awal'),
+  prioritas: requiredSelect(PRIORITY_OPTIONS, 'Pilih prioritas pekerjaan'),
   keluhan: z.string().optional(),
   detailServis: z.string().optional(),
   estimasiSelesai: z.string().optional(),
-  statusCuciMobil: z.enum(['TIDAK_PERLU', 'MENUNGGU', 'SELESAI']),
+  statusCuciMobil: requiredSelect(CAR_WASH_STATUS_OPTIONS, 'Pilih kebutuhan cuci mobil'),
   catatanCuciMobil: z.string().optional(),
 });
 
-export type WorkOrderFormValues = z.infer<typeof workOrderSchema>;
+export type WorkOrderFormValues = {
+  nomorWoPusat: string;
+  waktuMasuk: string;
+  nik: string;
+  nama: string;
+  no_hp: string;
+  alamat: string;
+  plat_nomor: string;
+  jenis_mobil: string;
+  warna: string;
+  no_rangka: string;
+  kilometer: number;
+  status: SelectValue<typeof WORK_ORDER_STATUS_OPTIONS>;
+  statusServis: SelectValue<typeof SERVICE_STATUS_OPTIONS>;
+  prioritas: SelectValue<typeof PRIORITY_OPTIONS>;
+  keluhan?: string;
+  detailServis?: string;
+  estimasiSelesai?: string;
+  statusCuciMobil: SelectValue<typeof CAR_WASH_STATUS_OPTIONS>;
+  catatanCuciMobil?: string;
+};
 
 import { VEHICLE_OPTIONS } from '@/common/lib/vehicle-catalog';
 
@@ -52,13 +84,13 @@ export function getDefaultWorkOrderFormValues(): WorkOrderFormValues {
     warna: '',
     no_rangka: '',
     kilometer: 0,
-    status: 'OPEN',
-    statusServis: 'ANTRIAN',
-    prioritas: 'NORMAL',
+    status: '',
+    statusServis: '',
+    prioritas: '',
     keluhan: '',
     detailServis: '',
     estimasiSelesai: '',
-    statusCuciMobil: 'TIDAK_PERLU',
+    statusCuciMobil: '',
     catatanCuciMobil: '',
   };
 }
@@ -96,7 +128,7 @@ export function buildWorkOrderPayload(values: WorkOrderFormValues): CreateWorkOr
     nomor_wo_pusat: values.nomorWoPusat,
     no_rangka: values.no_rangka,
     waktuMasuk: values.waktuMasuk,
-    status: values.status,
+    status: values.status as CreateWorkOrderPayload['status'],
     customer: {
       nik: values.nik,
       nama: values.nama,
@@ -115,9 +147,9 @@ export function buildWorkOrderPayload(values: WorkOrderFormValues): CreateWorkOr
     servis: {
       keluhan: values.keluhan?.trim() || '',
       estimasiSelesai: values.estimasiSelesai || null,
-      status: values.statusServis,
-      prioritas: values.prioritas,
-      statusCuciMobil: values.statusCuciMobil,
+      status: values.statusServis as NonNullable<CreateWorkOrderPayload['servis']>['status'],
+      prioritas: values.prioritas as NonNullable<CreateWorkOrderPayload['servis']>['prioritas'],
+      statusCuciMobil: values.statusCuciMobil as NonNullable<CreateWorkOrderPayload['servis']>['statusCuciMobil'],
       catatanCuciMobil: values.catatanCuciMobil?.trim() || null,
     },
     detail_servis: values.detailServis

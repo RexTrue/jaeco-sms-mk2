@@ -15,7 +15,16 @@ import { useToast } from '@/common/components/feedback/toast-provider';
 import { useConfirm } from '@/common/components/feedback/confirm-dialog-provider';
 import { useUnsavedChanges } from '@/common/hooks/use-unsaved-changes';
 import { useCreateWorkOrder } from '@/modules/work-orders/hooks/use-work-orders';
-import { buildWorkOrderPayload, getDefaultWorkOrderFormValues, workOrderSchema, type WorkOrderFormValues } from '@/modules/work-orders/lib/work-order-form';
+import {
+  buildWorkOrderPayload,
+  CAR_WASH_STATUS_OPTIONS,
+  getDefaultWorkOrderFormValues,
+  PRIORITY_OPTIONS,
+  SERVICE_STATUS_OPTIONS,
+  WORK_ORDER_STATUS_OPTIONS,
+  workOrderSchema,
+  type WorkOrderFormValues,
+} from '@/modules/work-orders/lib/work-order-form';
 import { VEHICLE_CATALOG } from '@/common/lib/vehicle-catalog';
 import { getErrorMessage } from '@/common/lib/request-error';
 
@@ -39,6 +48,10 @@ export function WorkOrderCreatePage() {
   });
 
   const selectedModel = watch('jenis_mobil');
+  const selectedStatus = watch('status');
+  const selectedStatusServis = watch('statusServis');
+  const selectedPrioritas = watch('prioritas');
+  const selectedStatusCuciMobil = watch('statusCuciMobil');
 
   useUnsavedChanges({ when: isDirty });
 
@@ -78,12 +91,12 @@ export function WorkOrderCreatePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="nomorWoPusat">Nomor Work Order Pusat</FieldLabel>
-                <Input id="nomorWoPusat" placeholder="GW-DSB-26030008" {...register('nomorWoPusat')} />
+                <Input id="nomorWoPusat" placeholder="Masukkan nomor work order pusat" {...register('nomorWoPusat')} />
                 <FieldError>{errors.nomorWoPusat?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="waktuMasuk">Tanggal / Waktu Input</FieldLabel>
-                <Input id="waktuMasuk" type="datetime-local" {...register('waktuMasuk')} />
+                <Input id="waktuMasuk" type="datetime-local" placeholder="Contoh: 25/12/2025 14:30" {...register('waktuMasuk')} />
                 <FieldError>{errors.waktuMasuk?.message}</FieldError>
               </div>
             </div>
@@ -97,22 +110,22 @@ export function WorkOrderCreatePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="nik">NIK Pemilik</FieldLabel>
-                <Input id="nik" placeholder="3301224406790004" {...register('nik')} />
+                <Input id="nik" placeholder="Masukkan NIK pemilik kendaraan" {...register('nik')} />
                 <FieldError>{errors.nik?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="nama">Nama Pemilik</FieldLabel>
-                <Input id="nama" placeholder="Yunita Sabariah" {...register('nama')} />
+                <Input id="nama" placeholder="Masukkan nama lengkap pemilik kendaraan" {...register('nama')} />
                 <FieldError>{errors.nama?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="no_hp">No HP</FieldLabel>
-                <Input id="no_hp" placeholder="081392937597" {...register('no_hp')} />
+                <Input id="no_hp" placeholder="Masukkan nomor HP aktif pemilik" {...register('no_hp')} />
                 <FieldError>{errors.no_hp?.message}</FieldError>
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="alamat">Alamat</FieldLabel>
-                <Textarea id="alamat" placeholder="Perum. Paradise Blok Y 6, Jatirjo" {...register('alamat')} />
+                <Textarea id="alamat" placeholder="Masukkan alamat lengkap pemilik kendaraan" {...register('alamat')} />
                 <FieldError>{errors.alamat?.message}</FieldError>
               </div>
             </div>
@@ -126,7 +139,7 @@ export function WorkOrderCreatePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="plat_nomor">Plat Nomor</FieldLabel>
-                <Input id="plat_nomor" placeholder="AB1257Y" {...register('plat_nomor')} />
+                <Input id="plat_nomor" placeholder="Masukkan nomor plat kendaraan" {...register('plat_nomor')} />
                 <FieldError>{errors.plat_nomor?.message}</FieldError>
               </div>
               <div className="md:col-span-2">
@@ -141,17 +154,17 @@ export function WorkOrderCreatePage() {
               </div>
               <div>
                 <FieldLabel htmlFor="warna">Warna</FieldLabel>
-                <Input id="warna" placeholder="Pristine White" {...register('warna')} />
+                <Input id="warna" placeholder="Masukkan warna kendaraan" {...register('warna')} />
                 <FieldError>{errors.warna?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="no_rangka">No Rangka / VIN</FieldLabel>
-                <Input id="no_rangka" placeholder="MF7HD27B8SJ000180" {...register('no_rangka')} />
+                <Input id="no_rangka" placeholder="Masukkan nomor rangka / VIN kendaraan" {...register('no_rangka')} />
                 <FieldError>{errors.no_rangka?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="kilometer">Kilometer</FieldLabel>
-                <Input id="kilometer" type="number" placeholder="6831" {...register('kilometer')} />
+                <Input id="kilometer" type="number" placeholder="Masukkan kilometer kendaraan saat ini" {...register('kilometer')} />
                 <FieldError>{errors.kilometer?.message}</FieldError>
               </div>
             </div>
@@ -165,55 +178,75 @@ export function WorkOrderCreatePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="status">Status Work Order</FieldLabel>
-                <Select id="status" {...register('status')}>
-                  <option value="OPEN">OPEN</option>
-                  <option value="IN_PROGRESS">IN_PROGRESS</option>
-                  <option value="CLOSED">CLOSED</option>
-                  <option value="CANCELLED">CANCELLED</option>
+                <Select id="status" className={!selectedStatus ? 'text-[color:var(--muted)]' : undefined} {...register('status')}>
+                  <option value="" disabled>
+                    Pilih status work order
+                  </option>
+                  {WORK_ORDER_STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
+                <FieldError>{errors.status?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="statusServis">Status Servis Awal</FieldLabel>
-                <Select id="statusServis" {...register('statusServis')}>
-                  <option value="ANTRIAN">ANTRIAN</option>
-                  <option value="DIKERJAKAN">PROSES SERVIS</option>
-                  <option value="TEST_DRIVE">SIAP TEST DRIVE</option>
-                  <option value="SELESAI">SELESAI</option>
-                  <option value="DIAMBIL">DIAMBIL</option>
-                  <option value="TERKENDALA">TERKENDALA</option>
+                <Select id="statusServis" className={!selectedStatusServis ? 'text-[color:var(--muted)]' : undefined} {...register('statusServis')}>
+                  <option value="" disabled>
+                    Pilih status servis awal
+                  </option>
+                  {SERVICE_STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'DIKERJAKAN' ? 'PROSES SERVIS' : option === 'TEST_DRIVE' ? 'SIAP TEST DRIVE' : option}
+                    </option>
+                  ))}
                 </Select>
+                <FieldError>{errors.statusServis?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="prioritas">Prioritas</FieldLabel>
-                <Select id="prioritas" {...register('prioritas')}>
-                  <option value="NORMAL">NORMAL</option>
-                  <option value="HIGH">HIGH</option>
-                  <option value="URGENT">URGENT</option>
+                <Select id="prioritas" className={!selectedPrioritas ? 'text-[color:var(--muted)]' : undefined} {...register('prioritas')}>
+                  <option value="" disabled>
+                    Pilih prioritas pekerjaan
+                  </option>
+                  {PRIORITY_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
+                <FieldError>{errors.prioritas?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="estimasiSelesai">Estimasi Selesai</FieldLabel>
-                <Input id="estimasiSelesai" type="datetime-local" {...register('estimasiSelesai')} />
+                <Input id="estimasiSelesai" type="datetime-local" placeholder="Contoh: 25/12/2025 16:00" {...register('estimasiSelesai')} />
               </div>
               <div>
                 <FieldLabel htmlFor="statusCuciMobil">Permintaan Cuci Mobil</FieldLabel>
-                <Select id="statusCuciMobil" {...register('statusCuciMobil')}>
-                  <option value="TIDAK_PERLU">Tidak perlu</option>
-                  <option value="MENUNGGU">Diminta / menunggu</option>
-                  <option value="SELESAI">Sudah selesai</option>
+                <Select id="statusCuciMobil" className={!selectedStatusCuciMobil ? 'text-[color:var(--muted)]' : undefined} {...register('statusCuciMobil')}>
+                  <option value="" disabled>
+                    Pilih kebutuhan cuci mobil
+                  </option>
+                  {CAR_WASH_STATUS_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option === 'TIDAK_PERLU' ? 'Tidak perlu' : option === 'MENUNGGU' ? 'Diminta / menunggu' : 'Sudah selesai'}
+                    </option>
+                  ))}
                 </Select>
+                <FieldError>{errors.statusCuciMobil?.message}</FieldError>
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="catatanCuciMobil">Catatan Cuci Mobil</FieldLabel>
-                <Textarea id="catatanCuciMobil" placeholder="Opsional: permintaan khusus terkait cuci mobil" {...register('catatanCuciMobil')} />
+                <Textarea id="catatanCuciMobil" placeholder="Masukkan catatan tambahan terkait cuci mobil (opsional)" {...register('catatanCuciMobil')} />
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="keluhan">Keluhan / Ringkasan Pekerjaan</FieldLabel>
-                <Textarea id="keluhan" placeholder="Opsional: ringkasan keluhan pelanggan" {...register('keluhan')} />
+                <Textarea id="keluhan" placeholder="Masukkan keluhan atau ringkasan pekerjaan pelanggan (opsional)" {...register('keluhan')} />
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="detailServis">Detail Servis</FieldLabel>
-                <Textarea id="detailServis" placeholder={'Opsional, satu baris satu item pekerjaan'} {...register('detailServis')} />
+                <Textarea id="detailServis" placeholder="Masukkan detail pekerjaan servis (satu baris per item, opsional)" {...register('detailServis')} />
                 <FieldHint>Satu baris satu item pekerjaan.</FieldHint>
               </div>
             </div>

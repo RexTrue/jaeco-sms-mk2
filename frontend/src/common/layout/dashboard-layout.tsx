@@ -118,6 +118,7 @@ export function DashboardLayout() {
         ) : null}
         <Button
           variant="ghost"
+          className="logout-button"
           onClick={() => {
             clearSession();
             navigate('/login', { replace: true });

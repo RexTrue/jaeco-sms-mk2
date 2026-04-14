@@ -59,6 +59,17 @@ export class NotificationsController {
     return { success: true };
   }
 
+  @Delete(':id')
+  async deleteOne(@Param('id') id: string, @Headers('authorization') authorization?: string) {
+    const actor = parseToken(authorization);
+    const notificationId = Number(id);
+    if (!Number.isInteger(notificationId) || notificationId <= 0) {
+      throw new BadRequestException('ID notifikasi tidak valid');
+    }
+    const deletedCount = await this.notificationsService.deleteOne(actor.id_user, notificationId, 'system');
+    return { success: true, deletedCount };
+  }
+
   @Delete()
   async clearAll(@Headers('authorization') authorization?: string) {
     const actor = parseToken(authorization);

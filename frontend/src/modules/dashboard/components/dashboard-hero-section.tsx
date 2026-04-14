@@ -10,6 +10,7 @@ import { dashboardTone } from '@/modules/dashboard/lib/dashboard-tone';
 import { cn } from '@/common/utils/cn';
 import { getPreferredDisplayName } from '@/common/lib/display-name';
 import type { Service, WorkOrder } from '@/common/types/domain';
+import { DashboardBroadcastCard } from '@/modules/dashboard/components/dashboard-broadcast-card';
 
 export function DashboardHeroSection({ config, services, workOrders }: { config: DashboardConfig; services: Service[]; workOrders: WorkOrder[] }) {
   const navigate = useNavigate();
@@ -75,15 +76,7 @@ export function DashboardHeroSection({ config, services, workOrders }: { config:
         </div>
       </Card>
 
-      <Card className="dashboard-surface overflow-hidden p-0">
-        <button
-          type="button"
-          onClick={() => navigate('/services')}
-          className="dashboard-interactive-card block h-full w-full rounded-[28px] p-0 focus-visible:outline-none"
-        >
-          <img src={config.heroImage} alt="JAECOO" className="h-full min-h-[300px] w-full rounded-xl object-cover transition duration-700 hover:scale-[1.02]" />
-        </button>
-      </Card>
+      <DashboardBroadcastCard />
     </section>
   );
 }
