@@ -90,7 +90,7 @@ export function WorkOrderListPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow="Work Order"
-        title="Work Order"
+        title="Daftar Work Order Aktif"
         actions={hasPermission(role, 'work-orders:create') ? (
           <Link to="/work-orders/new"><Button type="button">Tambah Work Order Baru +</Button></Link>
         ) : null}

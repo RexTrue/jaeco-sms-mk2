@@ -44,7 +44,7 @@ export function ServiceBoardPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader eyebrow="Servis" title="Board Servis" />
+      <PageHeader eyebrow="Servis" title="Daftar Board Servis" />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <form onSubmit={submitSearch} className="flex w-full items-center gap-2 md:max-w-sm">

@@ -78,23 +78,23 @@ export function WorkOrderEditPage() {
     <div className="space-y-5">
       <PageHeader eyebrow="Work Order" title="Edit Work Order" />
 
-      <FormShell eyebrow="Form Terpadu" title="Perbarui Work Order" subtitle="Sesuaikan data pemilik, kendaraan, dan servis bila ada koreksi input dari operasional.">
+      <FormShell eyebrow="Form Pengeditan Work Order" title="Silakan Mengganti Isi Work Order Sesuai Perubahan!" subtitle="Sesuaikan data pemilik, kendaraan, dan servis bila ada koreksi input dari operasional.">
         <FormDirtyBanner visible={isDirty} />
         <form className="mt-4 space-y-6" onSubmit={onSubmit}>
           <section className="space-y-4 rounded-[24px] border border-[color:var(--line)] bg-[color:var(--panel-light)]/40 p-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Work Order Pusat</p>
-              <h3 className="mt-2 text-xl font-semibold theme-text">Nomor WO, status, prioritas, dan detail servis</h3>
+              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Form Bagian Work Order Pusat</p>
+              <h3 className="mt-2 text-xl font-semibold theme-text">Form Pengisian Nomor Work Order Pusat dan Tanggal Waktu Input</h3>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="nomorWoPusat">Nomor Work Order Pusat</FieldLabel>
-                <Input id="nomorWoPusat" placeholder="GW-DSB-26030008" {...register('nomorWoPusat')} />
+                <Input id="nomorWoPusat" placeholder="Ubah nomor work order pusat disini!" {...register('nomorWoPusat')} />
                 <FieldError>{errors.nomorWoPusat?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="waktuMasuk">Tanggal / Waktu Input</FieldLabel>
-                <Input id="waktuMasuk" type="datetime-local" {...register('waktuMasuk')} />
+                <Input id="waktuMasuk" type="datetime-local" placeholder="Contoh: 25/12/2025 14:30" {...register('waktuMasuk')} />
                 <FieldError>{errors.waktuMasuk?.message}</FieldError>
               </div>
             </div>
@@ -102,28 +102,28 @@ export function WorkOrderEditPage() {
 
           <section className="space-y-4 rounded-[24px] border border-[color:var(--line)] bg-[color:var(--panel-light)]/40 p-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Pemilik</p>
-              <h3 className="mt-2 text-xl font-semibold theme-text">Data pelanggan / pemilik kendaraan</h3>
+              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Form Bagian Pemilik</p>
+              <h3 className="mt-2 text-xl font-semibold theme-text">Form Pengisian Data Pelanggan / Pemilik Kendaraan</h3>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="nik">NIK Pemilik</FieldLabel>
-                <Input id="nik" placeholder="3301224406790004" {...register('nik')} />
+                <Input id="nik" placeholder="Masukkan NIK pemilik kendaraan disini!" {...register('nik')} />
                 <FieldError>{errors.nik?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="nama">Nama Pemilik</FieldLabel>
-                <Input id="nama" placeholder="Yunita Sabariah" {...register('nama')} />
+                <Input id="nama" placeholder="Masukkan nama lengkap pemilik kendaraan!" {...register('nama')} />
                 <FieldError>{errors.nama?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="no_hp">No HP</FieldLabel>
-                <Input id="no_hp" placeholder="081392937597" {...register('no_hp')} />
+                <Input id="no_hp" placeholder="Masukkan nomor HP aktif pemilik!" {...register('no_hp')} />
                 <FieldError>{errors.no_hp?.message}</FieldError>
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="alamat">Alamat</FieldLabel>
-                <Textarea id="alamat" placeholder="Perum. Paradise Blok Y 6, Jatirjo" {...register('alamat')} />
+                <Textarea id="alamat" placeholder="Masukkan alamat lengkap pemilik kendaraan!" {...register('alamat')} />
                 <FieldError>{errors.alamat?.message}</FieldError>
               </div>
             </div>
@@ -131,13 +131,13 @@ export function WorkOrderEditPage() {
 
           <section className="space-y-4 rounded-[24px] border border-[color:var(--line)] bg-[color:var(--panel-light)]/40 p-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Kendaraan</p>
-              <h3 className="mt-2 text-xl font-semibold theme-text">Identitas kendaraan pelanggan</h3>
+              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Form Bagian Kendaraan</p>
+              <h3 className="mt-2 text-xl font-semibold theme-text">Form Pengisian Identitas Kendaraan Pelanggan</h3>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <FieldLabel htmlFor="plat_nomor">Plat Nomor</FieldLabel>
-                <Input id="plat_nomor" placeholder="AB1257Y" {...register('plat_nomor')} />
+                <Input id="plat_nomor" placeholder="Masukkan nomor plat kendaraan!" {...register('plat_nomor')} />
                 <FieldError>{errors.plat_nomor?.message}</FieldError>
               </div>
               <div className="md:col-span-2">
@@ -152,17 +152,17 @@ export function WorkOrderEditPage() {
               </div>
               <div>
                 <FieldLabel htmlFor="warna">Warna</FieldLabel>
-                <Input id="warna" placeholder="Pristine White" {...register('warna')} />
+                <Input id="warna" placeholder="Masukkan warna kendaraan!" {...register('warna')} />
                 <FieldError>{errors.warna?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="no_rangka">No Rangka / VIN</FieldLabel>
-                <Input id="no_rangka" placeholder="MF7HD27B8SJ000180" {...register('no_rangka')} />
+                <Input id="no_rangka" placeholder="Masukkan nomor rangka atau VIN kendaraan!" {...register('no_rangka')} />
                 <FieldError>{errors.no_rangka?.message}</FieldError>
               </div>
               <div>
                 <FieldLabel htmlFor="kilometer">Kilometer</FieldLabel>
-                <Input id="kilometer" type="number" placeholder="6831" {...register('kilometer')} />
+                <Input id="kilometer" type="number" placeholder="Masukkan kilometer kendaraan saat ini!" {...register('kilometer')} />
                 <FieldError>{errors.kilometer?.message}</FieldError>
               </div>
             </div>
@@ -170,8 +170,8 @@ export function WorkOrderEditPage() {
 
           <section className="space-y-4 rounded-[24px] border border-[color:var(--line)] bg-[color:var(--panel-light)]/40 p-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Detail Work Order</p>
-              <h3 className="mt-2 text-xl font-semibold theme-text">Keluhan, servis, dan status distribusi</h3>
+              <p className="text-xs uppercase tracking-[0.28em] theme-muted">Form Bagian Detail Work Order</p>
+              <h3 className="mt-2 text-xl font-semibold theme-text">Form Pengisian Status, Prioritas, dan Lain Sebagainya.</h3>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -215,17 +215,17 @@ export function WorkOrderEditPage() {
                 </Select>
               </div>
               <div className="md:col-span-2">
-                <FieldLabel htmlFor="catatanCuciMobil">Catatan Cuci Mobil</FieldLabel>
-                <Textarea id="catatanCuciMobil" placeholder="Opsional: permintaan khusus terkait cuci mobil" {...register('catatanCuciMobil')} />
+                <FieldLabel htmlFor="catatanCuciMobil">Catatan untuk Cuci Mobil</FieldLabel>
+                <Textarea id="catatanCuciMobil" placeholder="Ubah catatan tambahan terkait cuci mobil (opsional)" {...register('catatanCuciMobil')} />
               </div>
               <div className="md:col-span-2">
-                <FieldLabel htmlFor="keluhan">Keluhan / Ringkasan Pekerjaan</FieldLabel>
-                <Textarea id="keluhan" placeholder="Opsional: ringkasan keluhan pelanggan" {...register('keluhan')} />
+                <FieldLabel htmlFor="keluhan">Keluhan dan Ringkasan Pekerjaan</FieldLabel>
+                <Textarea id="keluhan" placeholder="Ubah keluhan atau ringkasan pekerjaan pelanggan (opsional)" {...register('keluhan')} />
               </div>
               <div className="md:col-span-2">
                 <FieldLabel htmlFor="detailServis">Detail Servis</FieldLabel>
-                <Textarea id="detailServis" placeholder={'Opsional, satu baris satu item pekerjaan'} {...register('detailServis')} />
-                <FieldHint>Satu baris satu item pekerjaan.</FieldHint>
+                <Textarea id="detailServis" placeholder={'Ubah detail pekerjaan servis (satu baris per item, opsional)'} {...register('detailServis')} />
+                <FieldHint>Cek Ulang Kebenaran Data Sebelum Work Order Disimpan.</FieldHint>
               </div>
             </div>
           </section>

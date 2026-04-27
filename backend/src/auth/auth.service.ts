@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { compareSync } from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseToken, signToken } from '../common/auth';
@@ -16,17 +16,43 @@ function inferNameFromEmail(email: string) {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async login(email: string, password: string) {
-    const normalizedEmail = email.trim().toLowerCase();
-    const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const providedPassword = typeof password === 'string' ? password : '';
+
+    if (!normalizedEmail || !providedPassword) {
+      throw new UnauthorizedException('Email atau password tidak valid.');
+    }
+
+    let user;
+    try {
+      user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+    } catch (error) {
+      this.logger.error(`Gagal mengambil user login untuk ${normalizedEmail}.`, error instanceof Error ? error.stack : undefined);
+      throw new InternalServerErrorException('Layanan login sedang bermasalah.');
+    }
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Email atau password tidak valid.');
     }
 
-    const validPassword = compareSync(password, user.password);
+    if (typeof user.password !== 'string' || user.password.trim().length === 0) {
+      this.logger.warn(`User ${normalizedEmail} memiliki password hash yang tidak valid.`);
+      throw new UnauthorizedException('Email atau password tidak valid.');
+    }
+
+    let validPassword = false;
+    try {
+      validPassword = compareSync(providedPassword, user.password);
+    } catch (error) {
+      this.logger.error(`Validasi password gagal untuk ${normalizedEmail}.`, error instanceof Error ? error.stack : undefined);
+      throw new UnauthorizedException('Email atau password tidak valid.');
+    }
+
     if (!validPassword) {
       throw new UnauthorizedException('Email atau password tidak valid.');
     }
@@ -39,8 +65,16 @@ export class AuthService {
       isActive: user.isActive,
     };
 
+    let accessToken: string;
+    try {
+      accessToken = signToken(safeUser);
+    } catch (error) {
+      this.logger.error(`Gagal membuat token login untuk ${normalizedEmail}.`, error instanceof Error ? error.stack : undefined);
+      throw new InternalServerErrorException('Layanan login sedang bermasalah.');
+    }
+
     return {
-      accessToken: signToken(safeUser),
+      accessToken,
       user: safeUser,
     };
   }

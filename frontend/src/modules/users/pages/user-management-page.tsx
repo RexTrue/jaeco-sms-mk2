@@ -58,7 +58,7 @@ export function UserManagementPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow="Pegawai"
-        title="Pegawai"
+        title="Daftar Pegawai"
         actions={(
           <PermissionGate permission="users:update">
             <Link to="/users/new"><Button type="button">Tambah User Baru +</Button></Link>

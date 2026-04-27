@@ -76,7 +76,7 @@ export function DashboardBroadcastCard() {
           >
             {hasBroadcast
               ? latestBroadcast?.message
-              : 'Belum ada pengumuman baru. Card ini akan menampilkan broadcast terbaru dari sistem untuk semua role.'}
+              : 'Belum ada pengumuman baru. Bagian ini akan menampilkan broadcast terbaru dari sistem untuk semua role.'}
           </p>
         </div>
 

@@ -21,11 +21,7 @@ export function DashboardQuickActions({ config }: { config: DashboardConfig }) {
       <Card className="dashboard-surface">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] theme-muted">Akses Cepat</p>
-            <h3 className="mt-3 text-[1.35rem] font-semibold tracking-[-0.03em] theme-text">Empat laman utama yang paling sering dipakai</h3>
-            <p className="mt-2 text-sm leading-6 theme-muted">
-              Akses cepat ke menu inti yang paling sering dipakai.
-            </p>
+            <p className="text-xs uppercase tracking-[0.28em] theme-muted">Menu Akses Cepat</p>
           </div>
         </div>
 
